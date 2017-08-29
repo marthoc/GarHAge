@@ -7,7 +7,7 @@ A detailed howto and bill of materials will follow shortly.
 
 ### Quick Start
 
-0. Download, install, and setup the Arduino IDE with ESP8266 support (outside the scope of this guide; many tutorials are available online).
+0. Download, install, and setup the Arduino IDE with ESP8266 support.
 1. Load the sketch in the Arduino IDE and modify the user parameters found at the top of the sketch.
 2. Upload the sketch to your ESP8266 board.
 3. Connect your ESP8266 board to your relays: one for open/close, and one for stop.
@@ -16,6 +16,14 @@ A detailed howto and bill of materials will follow shortly.
 6. Mount the reed switch to your garage door.
 7. Add the configuration provided below to your Home Assistant's configuration.yaml.
 8. Power up your ESP8266 board and enjoy!
+
+### Setting up GarHAge
+
+#### 0. Setting up the Arduino IDE
+
+You will modify the configuration parameters and upload the sketch to your ESP8266 board with the Arduino IDE. So, let's set it up.
+
+1. Download the Arduino IDE for your platform from [here](https://www.arduino.cc/en/Main/Software) and install it.
 
 ### Home Assistant configuration.yaml Parameters
 
