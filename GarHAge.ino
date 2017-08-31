@@ -126,7 +126,7 @@ void check_door1_status() {
       client.publish(mqtt_door1_status_topic, "open", true);
     }
     else if (digitalRead(door1_statusPin) == LOW) {
-      Serial.print(door2_alias);
+      Serial.print(door1_alias);
       Serial.print(" closed! Publishing to ");
       Serial.print(mqtt_door1_status_topic);
       Serial.println("...");
