@@ -38,7 +38,6 @@ const char* mqtt_door1_action_topic = "garage/door/1/action";
 const char* mqtt_door1_status_topic = "garage/door/1/status";
 const char* mqtt_door2_action_topic = "garage/door/2/action";
 const char* mqtt_door2_status_topic = "garage/door/2/status";
-int mqtt_status_update_interval = 60; // Publish a status message for each door every X seconds (default 60; 0 to disable);
 
 // GPIO pin details
 
@@ -52,10 +51,11 @@ int door2_closePin = 2;
 int door2_stopPin = 12;
 int door2_statusPin = 13;
 
-// Door Aliases
+// Miscellaneous parameters
 
 char* door1_alias = "Door 1";
 char* door2_alias = "Door 2";
+int mqtt_status_update_interval = 0; // Publish a status message for each door every X seconds (default 0 (disabled); any integer > 0 to enable);
 
 /*
  * End of user-configurable parameters
