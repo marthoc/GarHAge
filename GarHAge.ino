@@ -116,7 +116,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 // Functions that run in loop() to check door statuses (open/closed) each loop and publish any change
 
 void check_door1_status() {
-  currentStatusValue = digitalRead(door1_statusPin);
+  int currentStatusValue = digitalRead(door1_statusPin);
   if (currentStatusValue != door1_lastStatusValue) {
     if (digitalRead(door1_statusPin) == HIGH) {
       Serial.print(door1_alias);
@@ -137,7 +137,7 @@ void check_door1_status() {
 }
 
 void check_door2_status() {
-  currentStatusValue = digitalRead(door2_statusPin);
+  int currentStatusValue = digitalRead(door2_statusPin);
   if (currentStatusValue != door2_lastStatusValue) {
     if (digitalRead(door2_statusPin) == HIGH) {
       Serial.print(door2_alias);
