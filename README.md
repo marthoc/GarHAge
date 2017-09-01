@@ -1,9 +1,11 @@
 # GarHAge
 ## aka the Home-Assistant-friendly ESP8266-based MQTT Garage Door Controller
 
-This sketch, in combination with a dual-relay module and a reed switch, implements a garage door controller (almost) completely compatible with Home Assistant's "MQTT Cover" platform.
+GarHAge allows up to two "dumb" garage door openers to be controlled and report garage door status (open/closed) via MQTT. GarHAge is almost completely compatible with Home Assistant's "MQTT Cover" platform, responding to open/close/stop commands and reporting status, but not implementing the "tilt" functionality. 
 
-A detailed howto and bill of materials will follow shortly.
+GarHAge should be controllable via any home automation software that can configure an MQTT cover or rollershutter.
+
+GarHAge has both hardware and software components. The required hardware components include an ESP8266-based microcontroller (such as the NodeMCU or Wemos D1), a relay module, and reed/magnetic switches. The software component is found in this repo.
 
 ## Quick Start
 
