@@ -234,7 +234,7 @@ void reconnect() {
       }
       else if (door1_currentDoorStatus == 1) {
         Serial.print(door1_alias);
-        Serial.print(" is closed! Publishing to ");
+        Serial.print(" is open! Publishing to ");
         Serial.print(mqtt_door1_status_topic);
         Serial.println("...");
         client.publish(mqtt_door1_status_topic, "open", true);
@@ -251,7 +251,7 @@ void reconnect() {
         }
         else if (door2_currentDoorStatus == 1) {
           Serial.print(door2_alias);
-          Serial.print(" is closed! Publishing to ");
+          Serial.print(" is open! Publishing to ");
           Serial.print(mqtt_door2_status_topic);
           Serial.println("...");
           client.publish(mqtt_door2_status_topic, "open", true);
