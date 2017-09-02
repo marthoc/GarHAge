@@ -6,60 +6,38 @@
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include "config.h"
 
-/*
- * Start of user-configurable parameters
- */
+const char* ssid = "WIFI_SSID";
+const char* password = "WIFI_PASS";
 
-// Wifi details
+boolean static_ip = STATIC_IP;
+IPAddress ip(IP);
+IPAddress gateway(GATEWAY);
+IPAddress subnet(SUBNET);
 
-const char* ssid = "your-ssid-name";
-const char* password = "your-ssid-pass";
-
-// Static IP details
-// Set static_ip to "static" to use ip/gateway/subnet parameters below
-// Set static_ip to "dhcp" to obtain ip address via DHCP and ignore ip/gateway/subnet parameters
-
-const char* static_ip = "dhcp";
-IPAddress ip(192,168,1,100);
-IPAddress gateway(192,168,1,1);
-IPAddress subnet(255,255,255,0);
-
-// MQTT server details
-
-const char* mqtt_server = "w.x.y.z";
-const char* mqtt_clientId = "GarHAge";
-const char* mqtt_username = "your-username";
-const char* mqtt_password = "your-password";
-
-// MQTT topic/payload details
-
-const char* mqtt_door1_action_topic = "garage/door/1/action";
-const char* mqtt_door1_status_topic = "garage/door/1/status";
-const char* mqtt_door2_action_topic = "garage/door/2/action";
-const char* mqtt_door2_status_topic = "garage/door/2/status";
-
-// GPIO pin details
-
-int door1_openPin = 4;
-int door1_closePin = 4;
-int door1_stopPin = 5;
-int door1_statusPin = 14;
-
-int door2_openPin = 2;
-int door2_closePin = 2;
-int door2_stopPin = 12;
-int door2_statusPin = 13;
-
-// Miscellaneous parameters
-
-char* door1_alias = "Door 1";
-char* door2_alias = "Door 2";
+const char* mqtt_broker = MQTT_BROKER_HOSTNAME;
+const char* mqtt_clientId = MQTT_CLIENTID;
+const char* mqtt_username = MQTT_USER;
+const char* mqtt_password = MQTT_PASS;
 int mqtt_status_update_interval = 0; // Publish a status message for each door every X seconds (default 0 (disabled); any integer > 0 to enable);
 
-/*
- * End of user-configurable parameters
- */
+char* door1_alias = DOOR1_ALIAS;
+const char* mqtt_door1_action_topic = MQTT_DOOR1_ACTION_TOPIC;
+const char* mqtt_door1_status_topic = MQTT_DOOR1_STATUS_TOPIC;
+int door1_openPin = DOOR1_OPEN_PIN;
+int door1_closePin = DOOR1_CLOSE_PIN;
+int door1_stopPin = DOOR1_STOP_PIN;
+int door1_statusPin = DOOR1_STATUS_PIN;
+
+boolean door2_enabled = DOOR2_ENABLED;
+char* door2_alias = DOOR2_ALIAS;
+const char* mqtt_door2_action_topic = MQTT_DOOR2_ACTION_TOPIC;
+const char* mqtt_door2_status_topic = MQTT_DOOR2_STATUS_TOPIC;
+int door2_openPin = DOOR2_OPEN_PIN;
+int door2_closePin = DOOR2_CLOSE_PIN;
+int door2_stopPin = DOOR2_STOP_PIN;
+int door2_statusPin = DOOR2_STATUS_PIN;
 
 int door1_lastStatusValue = 2;
 int door2_lastStatusValue = 2;
@@ -79,7 +57,7 @@ void setup_wifi() {
 
   WiFi.begin(ssid, password);
 
-  if (static_ip == "static") {
+  if (static_ip) {
     WiFi.config(ip, gateway, subnet);
   }
 
@@ -301,7 +279,7 @@ void setup() {
   // Setup serial output, connect to wifi, connect to MQTT broker
   Serial.begin(115200);
   setup_wifi();
-  client.setServer(mqtt_server, 1883);
+  client.setServer(mqtt_broker, 1883);
   client.setCallback(callback);
 }
 
