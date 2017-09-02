@@ -8,8 +8,8 @@
 #include <PubSubClient.h>
 #include "config.h"
 
-const char* ssid = "WIFI_SSID";
-const char* password = "WIFI_PASS";
+const char* ssid = WIFI_SSID;
+const char* password = WIFI_PASS;
 
 boolean static_ip = STATIC_IP;
 IPAddress ip(IP);
