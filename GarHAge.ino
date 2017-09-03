@@ -39,7 +39,6 @@ const char* mqtt_door1_action_topic = MQTT_DOOR1_ACTION_TOPIC;
 const char* mqtt_door1_status_topic = MQTT_DOOR1_STATUS_TOPIC;
 const int door1_openPin = DOOR1_OPEN_PIN;
 const int door1_closePin = DOOR1_CLOSE_PIN;
-const int door1_stopPin = DOOR1_STOP_PIN;
 const int door1_statusPin = DOOR1_STATUS_PIN;
 
 const boolean door2_enabled = DOOR2_ENABLED;
@@ -48,7 +47,6 @@ const char* mqtt_door2_action_topic = MQTT_DOOR2_ACTION_TOPIC;
 const char* mqtt_door2_status_topic = MQTT_DOOR2_STATUS_TOPIC;
 const int door2_openPin = DOOR2_OPEN_PIN;
 const int door2_closePin = DOOR2_CLOSE_PIN;
-const int door2_stopPin = DOOR2_STOP_PIN;
 const int door2_statusPin = DOOR2_STATUS_PIN;
 
 const int relayActiveTime = 500;
@@ -81,7 +79,7 @@ void setup_wifi() {
 
   Serial.println("");
   Serial.println("WiFi connected");
-  Serial.println("IP address: ");
+  Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
 }
 
@@ -104,25 +102,48 @@ void callback(char* topic, byte* payload, unsigned int length) {
   triggerDoorAction(topicToProcess, payloadToProcess);
 }
 
+// Functions that check door status and publish an update on demand
+
+void publish_door1_status() {
+  if (digitalRead(door1_statusPin) == HIGH) {
+    Serial.print(door1_alias);
+    Serial.print(" open! Publishing to ");
+    Serial.print(mqtt_door1_status_topic);
+    Serial.println("...");
+    client.publish(mqtt_door1_status_topic, "open", true);
+  }
+  else {
+    Serial.print(door1_alias);
+    Serial.print(" closed! Publishing to ");
+    Serial.print(mqtt_door1_status_topic);
+    Serial.println("...");
+    client.publish(mqtt_door1_status_topic, "closed", true);
+  }
+}
+
+void publish_door2_status() {
+  if (digitalRead(door2_statusPin) == HIGH) {
+    Serial.print(door2_alias);
+    Serial.print(" open! Publishing to ");
+    Serial.print(mqtt_door2_status_topic);
+    Serial.println("...");
+    client.publish(mqtt_door2_status_topic, "open", true);
+  }
+  else {
+    Serial.print(door2_alias);
+    Serial.print(" closed! Publishing to ");
+    Serial.print(mqtt_door2_status_topic);
+    Serial.println("...");
+    client.publish(mqtt_door2_status_topic, "closed", true);
+  }
+}
+
 // Functions that run in loop() to check door statuses (open/closed) each loop and publish any change
 
 void check_door1_status() {
   int currentStatusValue = digitalRead(door1_statusPin);
   if (currentStatusValue != door1_lastStatusValue) {
-    if (digitalRead(door1_statusPin) == HIGH) {
-      Serial.print(door1_alias);
-      Serial.print(" opened! Publishing to ");
-      Serial.print(mqtt_door1_status_topic);
-      Serial.println("...");
-      client.publish(mqtt_door1_status_topic, "open", true);
-    }
-    else if (digitalRead(door1_statusPin) == LOW) {
-      Serial.print(door1_alias);
-      Serial.print(" closed! Publishing to ");
-      Serial.print(mqtt_door1_status_topic);
-      Serial.println("...");
-      client.publish(mqtt_door1_status_topic, "closed", true);
-    }
+    publish_door1_status();
     door1_lastStatusValue = currentStatusValue;
   }
 }
@@ -130,20 +151,7 @@ void check_door1_status() {
 void check_door2_status() {
   int currentStatusValue = digitalRead(door2_statusPin);
   if (currentStatusValue != door2_lastStatusValue) {
-    if (digitalRead(door2_statusPin) == HIGH) {
-      Serial.print(door2_alias);
-      Serial.print(" opened! Publishing to ");
-      Serial.print(mqtt_door2_status_topic);
-      Serial.println("...");
-      client.publish(mqtt_door2_status_topic, "open", true);
-    }
-    else if (digitalRead(door2_statusPin) == LOW) {
-      Serial.print(door2_alias);
-      Serial.print(" closed! Publishing to ");
-      Serial.print(mqtt_door2_status_topic);
-      Serial.println("...");
-      client.publish(mqtt_door2_status_topic, "closed", true);
-    }
+    publish_door2_status();
     door2_lastStatusValue = currentStatusValue;
   }
 }
@@ -172,11 +180,11 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     Serial.println(" CLOSE relay!");
     toggleRelay(door1_closePin);
   }
-  else if (requestedDoor == mqtt_door1_action_topic && requestedAction == "STOP") {
-    Serial.print("Triggering ");
+  else if (requestedDoor == mqtt_door1_action_topic && requestedAction == "STATE") {
+    Serial.print("Publishing on-demand status update for ");
     Serial.print(door1_alias);
-    Serial.println(" STOP relay!");
-    toggleRelay(door1_stopPin);
+    Serial.println("!");
+    publish_door1_status();
   }
   else if (requestedDoor == mqtt_door2_action_topic && requestedAction == "OPEN") {
     Serial.print("Triggering ");
@@ -190,11 +198,11 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     Serial.println(" CLOSE relay!");
     toggleRelay(door2_closePin);
   }
-  else if (requestedDoor == mqtt_door2_action_topic && requestedAction == "STOP") {
-    Serial.print("Triggering ");
+  else if (requestedDoor == mqtt_door2_action_topic && requestedAction == "STATE") {
+    Serial.print("Publishing on-demand status update for ");
     Serial.print(door2_alias);
-    Serial.println(" STOP relay!");
-    toggleRelay(door2_stopPin);
+    Serial.println("!");
+    publish_door2_status();
   }
   else { Serial.println("Unrecognized action payload... taking no action!");
   }
@@ -224,39 +232,11 @@ void reconnect() {
       }
 
       // Publish the current door status on connect/reconnect to ensure HA status is synced with whatever happened while disconnected
-      int door1_currentDoorStatus = digitalRead(door1_statusPin);
-      if (door1_currentDoorStatus == 0) {
-        Serial.print(door1_alias);
-        Serial.print(" is closed! Publishing to ");
-        Serial.print(mqtt_door1_status_topic);
-        Serial.println("...");
-        client.publish(mqtt_door1_status_topic, "closed", true);
-      }
-      else if (door1_currentDoorStatus == 1) {
-        Serial.print(door1_alias);
-        Serial.print(" is open! Publishing to ");
-        Serial.print(mqtt_door1_status_topic);
-        Serial.println("...");
-        client.publish(mqtt_door1_status_topic, "open", true);
-      }
+      publish_door1_status();
   
-      if (door2_enabled) {
-        int door2_currentDoorStatus = digitalRead(door2_statusPin);
-        if (door2_currentDoorStatus == 0) {
-          Serial.print(door2_alias);
-          Serial.print(" is closed! Publishing to ");
-          Serial.print(mqtt_door2_status_topic);
-          Serial.println("...");
-          client.publish(mqtt_door2_status_topic, "closed", true);
-        }
-        else if (door2_currentDoorStatus == 1) {
-          Serial.print(door2_alias);
-          Serial.print(" is open! Publishing to ");
-          Serial.print(mqtt_door2_status_topic);
-          Serial.println("...");
-          client.publish(mqtt_door2_status_topic, "open", true);
-        }
+      if (door2_enabled) { publish_door2_status();
       }
+
     } 
     else {
       Serial.print("failed, rc=");
@@ -270,16 +250,15 @@ void reconnect() {
 
 void setup() {
   // Setup the output and input pins used in the sketch
+  // Set the lastStatusValue variables to the state of the status pins at setup time
   pinMode(door1_openPin, OUTPUT);
   digitalWrite(door1_openPin, LOW);
 
   pinMode(door1_closePin, OUTPUT);
   digitalWrite(door1_closePin, LOW);
   
-  pinMode(door1_stopPin, OUTPUT);
-  digitalWrite(door1_stopPin, LOW);
-  
   pinMode(door1_statusPin, INPUT_PULLUP);
+  door1_lastStatusValue = digitalRead(door1_statusPin);
 
   if (door2_enabled) {
     pinMode(door2_openPin, OUTPUT);
@@ -287,14 +266,12 @@ void setup() {
 
     pinMode(door2_closePin, OUTPUT);
     digitalWrite(door2_closePin, LOW);
-  
-    pinMode(door2_stopPin, OUTPUT);
-    digitalWrite(door2_stopPin, LOW);
-  
+
     pinMode(door2_statusPin, INPUT_PULLUP);
+    door2_lastStatusValue = digitalRead(door2_statusPin);
   }
 
-  // Setup serial output, connect to wifi, connect to MQTT broker
+  // Setup serial output, connect to wifi, connect to MQTT broker, set MQTT message callback
   Serial.begin(115200);
   setup_wifi();
   client.setServer(mqtt_broker, 1883);
@@ -310,5 +287,6 @@ void loop() {
   
   // Check door open/closed status each loop and publish changes
   check_door1_status();
-  if (door2_enabled) { check_door2_status(); }
+  if (door2_enabled) { check_door2_status(); 
+  }
 }
