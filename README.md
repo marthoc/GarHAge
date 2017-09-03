@@ -1,9 +1,11 @@
 # GarHAge
-## the Home-Assistant-friendly ESP8266-based MQTT Garage Door Controller
+## a Home-Automation-friendly ESP8266-based MQTT Garage Door Controller
 
-GarHAge allows up to two "dumb" garage door openers to be controlled and report garage door status (open/closed) via MQTT. GarHAge is almost completely compatible with Home Assistant's "MQTT Cover" platform, responding to open/close/stop commands and reporting status, but not implementing the "tilt" functionality. 
+GarHAge allows two "dumb" garage door openers to be controlled (open/close) and report garage door status (open/closed) via MQTT. 
 
-GarHAge should be controllable via any home automation software that can configure an MQTT cover or rollershutter.
+GarHAge is almost completely compatible with Home Assistant's "MQTT Cover" platform. It responds to HASS's open and close commands and reports door status to keep HASS's GUI in sync with the door state. GarHAge does not implement HASS's "stop" command (as this functionality varies between garage door openers) or "tilt" functionality. Sample HASS configuration snippets are provided in this repository to get your garage door openers connected to HASS as quickly and painlessly as possible.
+
+GarHAge should be controllable via any home automation software that can configure an MQTT cover, rollershutter, garage door, or send commands over MQTT, including OpenHAB.
 
 GarHAge has both hardware and software components. The required hardware components include an ESP8266-based microcontroller (such as the NodeMCU or Wemos D1), a relay module, and reed/magnetic switches. The software component is found in this repo.
 
@@ -13,11 +15,36 @@ GarHAge has both hardware and software components. The required hardware compone
 
 Building GarHAge to control two garage door openers requires:
 
-1. An ESP8266-based microcontroller; I recommend the NodeMCU as GarHAge was developed and is tested on it, but the sketch should also work with the Wemos D1 or similar. If you want to take advantage of all of GarHAge's features, your microcontroller will require 6 GPIOs.
-    - e.g. [this NodeMCU](https://www.aliexpress.com/item/New-Wireless-module-NodeMcu-Lua-WIFI-Internet-of-Things-development-board-based-ESP8266-with-pcb-Antenna/32656775273.html?spm=2114.search0104.3.1.kNN3Sj&ws_ab_test=searchweb0_0,searchweb201602_1_10152_10065_10151_10130_10068_10139_10307_10137_10060_10155_10154_10333_10334_10056_10335_10055_10336_10054_10059_10332_100031_10099_10103_10102_10052_10053_10142_10107_10050_10051_10326_10084_10083_10080_10082_10081_10178_10110_10111_10112_10113_10114_10312_10313_10314_10078_10079_10073,searchweb201603_15,ppcSwitch_5&btsid=38e2531b-1a13-4dd4-b7d8-b28ae3407d0a&algo_expid=8880a7ad-c8bd-42b3-a2ec-022a26420b88-3&algo_pvid=8880a7ad-c8bd-42b3-a2ec-022a26420b88&transAbTest=ae803_1). There are many options available on AliExpress.
+| No. | Qty | Part | Link | Approx Price |
+| --- | --- | ---- | ---- | ------------ |
+| 1. | 1 | ESP8266-based microcontroller (e.g. NodeMCU) | [Link](https://www.amazon.com/ESP8266-NodeMcu-development-Internet-HONG111/dp/B06XBSV95D/ref=sr_1_6?ie=UTF8&qid=1504449670&sr=8-6&keywords=nodemcu) | $7.00 |
+| 2. | 1 | Dual-relay module with active-high inputs | [Link](http://www.robotshop.com/en/2-channel-5v-relay-module.html) | $3.50 |
+| 3. | 2 | Reed/Magnetic door switches with normally-open contacts | [Link](http://www.robotshop.com/en/magnetic-door-switch-set.html) | $6.00 |
+| 4. | 1 | 5v MicroUSB power supply | [Link](http://www.robotshop.com/en/wall-adapter-power-supply-5vdc-2a.html) | $6.00 |
+| 5. | 1 | Mini solderless breadboard | [Link](http://www.robotshop.com/en/170-tie-point-mini-self-adhesive-solderless-breadboard-white.html) | $4.00 |
+| 6. | | Bell/low voltage two-conductor wire | | |
+| 7. | | Male-to-female breadboard jumper wires | | |
+| 8. | | Project box or case | | |
 
-2. A quad-relay module with active-high inputs; note that many modules available on Amazon or elsewhere are active-low, which will not work with GarHAge.
-    - [This relay module is the one I use](http://www.robotshop.com/en/4-channel-5v-relay-module.html). Its inputs are active-high, and it can be powered via the NodeMCU's VIN (when using MicroUSB power) or VU (on the LoLin NodeMCU variant) ports.
+### Detailed Bill of Materials
+
+#### 1. ESP8266-based microcontroller
+
+I recommend the NodeMCU as GarHAge was developed and is tested on it. Its advantages are: 
+- it comes with header pins already soldered so that it can plug directly into a mini solderless breadboard;
+- its VIN (or VU on the LoLin variant) port can power the 5v relay module;
+- it can be powered and programmed via MicroUSB;
+- it has Reset and Flash buttons, making programming easy.
+
+But, Garhage should also work with the Adafruit HUZZAH, Wemos D1, or similar, though you may need to adjust the GPIO ports used by the sketch to match the ESP8266 ports that your microcontroller makes available.
+
+#### 2. Dual-relay module with active-high inputs
+
+A dual-relay module (as opposed to individual 5v relays) makes setup easy: just plug jumper wires from the module's VCC, CH1, CH2, and GND pins to the NodeMCU. These relay modules generally also include LEDs to ease troubleshooting. 
+
+Most importantly, because the relay module is powered by 5v, its inputs can be triggered by the NodeMCU's GPIOs.
+
+GarHAge will only work with relay modules that are active-high (meaning that the relay is triggered by a HIGH output from a GPIO pin). Note that many modules available on Amazon, eBay, or AliExpress are active-low, which is **not supported** by GarHAge.
 
 3. Two reed / magnetic door switches with normally-open contacts (one per garage door); normally-closed switches will not currently work with GarHAge, though logic inversion is planned for a future update.
     - [This switch is the one I use for my doors](http://www.robotshop.com/en/magnetic-door-switch-set.html). If you use this switch, you will need to solder an additional length of wire to the short wires attached to the switch in order to reach from your garage door to your garage door opener, where GarHAge will likely be mounted.
