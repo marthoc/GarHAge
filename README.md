@@ -97,11 +97,14 @@ You will modify the configuration parameters and upload the sketch to the NodeMC
 
 ### 2. Load the sketch in the Arduino IDE and modify the user parameters in config.h
 
-GarHAge's configuration parameters are found in config.h. This section describes these parameters and their permitted values. **IMPORTANT: No modification of the sketch code in GarHAge.ino is necessary (or advised, unless you are confident you know what you are doing and are prepared for things to break unexpectedly).**
+GarHAge's configuration parameters are found in config.h. This section describes these parameters and their permitted values. 
+
+**IMPORTANT: No modification of the sketch code in GarHAge.ino is necessary (or advised, unless you are confident you know what you are doing and are prepared for things to break unexpectedly).**
 
 #### Wifi Parameters
 
 `WIFI_SSID "your-wifi-ssid"` The wifi ssid GarHAge will connect to; place between quotation marks.
+
 `WIFI_PASSWORD "your-wifi-password"` The wifi ssid's password; place between quotation marks.
 
 ## Quick Start
