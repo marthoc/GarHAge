@@ -7,7 +7,9 @@ GarHAge is almost completely compatible with Home Assistant's "MQTT Cover" platf
 
 GarHAge should be controllable via any home automation software that can configure an MQTT cover, rollershutter, garage door, or send commands over MQTT, including OpenHAB.
 
-GarHAge has both hardware and software components. The required hardware components include an ESP8266-based microcontroller (such as the NodeMCU or Wemos D1), a relay module, and reed/magnetic switches. The software component is found in this repo.
+GarHAge has both hardware and software components. The required hardware components include an ESP8266-based microcontroller (such as the NodeMCU), a relay module, and reed/magnetic switches. The software component is found in this repo.
+
+Best of all, if you select the proper parts, building and installing a GarHAge requires **no solder**! 
 
 ## Hardware
 
@@ -17,14 +19,18 @@ Building GarHAge to control two garage door openers requires:
 
 | No. | Qty | Part | Link | Approx Price |
 | --- | --- | ---- | ---- | ------------ |
-| 1. | 1 | ESP8266-based microcontroller (e.g. NodeMCU) | [Link](https://www.amazon.com/ESP8266-NodeMcu-development-Internet-HONG111/dp/B06XBSV95D/ref=sr_1_6?ie=UTF8&qid=1504449670&sr=8-6&keywords=nodemcu) | $7.00 |
-| 2. | 1 | Dual-relay module with active-high inputs | [Link](http://www.robotshop.com/en/2-channel-5v-relay-module.html) | $3.50 |
-| 3. | 2 | Reed/Magnetic door switches with normally-open contacts | [Link](http://www.robotshop.com/en/magnetic-door-switch-set.html) | $6.00 |
-| 4. | 1 | 5v MicroUSB power supply | [Link](http://www.robotshop.com/en/wall-adapter-power-supply-5vdc-2a.html) | $6.00 |
-| 5. | 1 | Mini solderless breadboard | [Link](http://www.robotshop.com/en/170-tie-point-mini-self-adhesive-solderless-breadboard-white.html) | $4.00 |
+| 1. | 1 | ESP8266-based microcontroller (e.g. NodeMCU) | [Link](https://www.amazon.com/ESP8266-NodeMcu-development-Internet-HONG111/dp/B06XBSV95D/ref=sr_1_6?ie=UTF8&qid=1504449670&sr=8-6&keywords=nodemcu) | $ 7.00 |
+| 2. | 1 | Dual-relay module with active-high inputs | [Link](http://www.robotshop.com/en/2-channel-5v-relay-module.html) | $ 4.00 |
+| 3. | 2 | Reed/Magnetic door switches | [Link](http://a.co/bEomwwP) | $ 12.00 |
+| 4. | 1 | 5v MicroUSB power supply | [Link](http://www.robotshop.com/en/wall-adapter-power-supply-5vdc-2a.html) | $ 6.00 |
+| 5. | 1 | Mini solderless breadboard (170 tie-point) | [Link](http://www.robotshop.com/en/170-tie-point-mini-self-adhesive-solderless-breadboard-white.html) | $ 4.00 |
 | 6. | | Bell/low voltage two-conductor wire | | |
 | 7. | | Male-to-female breadboard jumper wires | | |
 | 8. | | Project box or case | | |
+
+**Approximate total cost for major components:** $ 33.00, even less if you don't mind a long lead time and source your components from AliExpress/BangGood.
+
+**Note:** If you are building GarHAge to control only one garage door opener, you will only require a single-relay module, and a single reed switch.
 
 ### Detailed Bill of Materials
 
@@ -36,6 +42,8 @@ I recommend the NodeMCU as GarHAge was developed and is tested on it. Its advant
 - it can be powered and programmed via MicroUSB;
 - it has Reset and Flash buttons, making programming easy.
 
+Accordingly, this guide is written with the NodeMCU in mind.
+
 But, Garhage should also work with the Adafruit HUZZAH, Wemos D1, or similar, though you may need to adjust the GPIO ports used by the sketch to match the ESP8266 ports that your microcontroller makes available.
 
 #### 2. Dual-relay module with active-high inputs
@@ -46,28 +54,55 @@ Most importantly, because the relay module is powered by 5v, its inputs can be t
 
 GarHAge will only work with relay modules that are active-high (meaning that the relay is triggered by a HIGH output from a GPIO pin). Note that many modules available on Amazon, eBay, or AliExpress are active-low, which is **not supported** by GarHAge.
 
-3. Two reed / magnetic door switches with normally-open contacts (one per garage door); normally-closed switches will not currently work with GarHAge, though logic inversion is planned for a future update.
-    - [This switch is the one I use for my doors](http://www.robotshop.com/en/magnetic-door-switch-set.html). If you use this switch, you will need to solder an additional length of wire to the short wires attached to the switch in order to reach from your garage door to your garage door opener, where GarHAge will likely be mounted.
-    
-4. Bell/low voltage two-conductor wire to make connections from the quad-relay module to your garage door openers.
+#### 3. Reed/magnetic door switches
 
-5. A 5v micro USB power supply to power the NodeMCU.
+GarHAge will work with both normally-open and normally-closed reed switches (be sure to set the relevant config parameter to match the type of switch in use). Many switches with screw terminals are available, making placement and wiring easy.
 
-6. Mini solderless breadboard (170 tie-point); the NodeMCU mounts to this type of breadboard nicely, leaving one row of female ports next to each NodeMCU port and making it simple to use male-to-female jumper wires to make connections from the NodeMCU to the quad-relay module. The bell wire attached to the reed switches will also plug into the breadboard ports, making for a clean installation.
-    - e.g. [this breadboard](http://www.robotshop.com/en/170-tie-point-mini-solderless-breadboard-black.html).
+#### 4. 5v MicroUSB power supply
 
-7. Male-to-female breadboard jumper wires to connect the NodeMCU to the quad-relay module (6).
+Power your NodeMCU via the same type of power supply used to charge Android phones or a power a RaspberryPi. Powering the NodeMCU via MicroUSB is important since (on non-LoLin variant NodeMCU boards) the relay module can then be powered via the NodeMCU VIN port.
 
-8. A project box or case to hold the NodeMCU and quad-relay module.
+#### 5. Mini solderless breadboard (170 tie-point)
 
-**Note:** If you are building GarHAge to control only one garage door, you will only require a dual-relay module ([e.g. this module](http://www.robotshop.com/en/2-channel-5v-relay-module.html), and a single reed switch.
+The NodeMCU mounts to this breadboard nicely, leaving one female port next to each NodeMCU port and making it easy to use male-to-female jumper wires to make connections from the NodeMCU to the dual-relay module. The bell wire attached to the reed switches will also plug into the breadboard ports, making for a clean and solderless installation. Finally, these mini breadboards often also have an adhesive backing, making mounting in your project box easy.
 
-### Building and Installing GarHAge
+#### 6. - 8. Miscellaneous parts
 
-1. Attach your NodeMCU to the mini solderless breadboard, leaving one row of ports next to each NodeMCU pin.
+To install GarHAge, you will also require:
+- Enough bell/low voltage two-conductor wire to make connections from each reed/magnetic switch at your garage doors to where GarHAge is mounted and to make connections from GarHAge to each garage door opener.
+- Male-to-female breadboard jumper wires to make connections from the NodeMCU to the dual-relay module (4 jumper wires required).
+- a project box to hold both the NodeMCU and dual-relay module.
+
+### Building GarHAge
+
+1. Attach your NodeMCU to the middle of the mini solderless breadboard, leaving one female port next to each NodeMCU port.
 2. Mount the mini solderless breadboard in your project box.
-3. Mount the quad-relay module in your project box.
-4. To be continued...
+3. Mount the dual-relay module in your project box.
+4. Plug a jumper wire from VCC on the relay module to VIN / VU on the NodeMCU.
+5. Plug a jumper wire from GND on the relay module to GND on the NodeMCU.
+6. Plug a jumper wire from CH1 on the relay module to D2 on the NodeMCU (or Arduino/ESP8266 GPIO4).
+7. Plug a jumper wire from CH2 on the relay module to D1 on the NodeMCU (or Arduino/ESP8266 GPIO5).
+
+**Done!**
+
+## Software
+
+### 1. Set up the Arduino IDE
+
+You will modify the configuration parameters and upload the sketch to the NodeMCU with the Arduino IDE.
+
+1. Download the Arduino IDE for your platform from [here](https://www.arduino.cc/en/Main/Software) and install it.
+2. Add support for the ESP8266 to the Arduino IDE by following the instructions under "Installing with Boards Manager" [here](https://github.com/esp8266/arduino).
+3. Add the "PubSubClient" library to the Arduino IDE: follow the instructions for using the Library Manager [here](https://www.arduino.cc/en/Guide/Libraries#toc3), and search for and install the PubSubClient library.
+
+### 2. Load the sketch in the Arduino IDE and modify the user parameters in config.h
+
+GarHAge's configuration parameters are found in config.h. This section describes these parameters and their permitted values. **IMPORTANT: No modification of the sketch code in GarHAge.ino is necessary (or advised, unless you are confident you know what you are doing and are prepared for things to break unexpectedly).**
+
+#### Wifi Parameters
+
+`WIFI_SSID "your-wifi-ssid"` The wifi ssid GarHAge will connect to; place between quotation marks.
+`WIFI_PASSWORD "your-wifi-password"` The wifi ssid's password; place between quotation marks.
 
 ## Quick Start
 
