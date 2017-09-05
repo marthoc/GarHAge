@@ -53,6 +53,9 @@ const char* door2_statusSwitchLogic = DOOR2_STATUS_SWITCH_LOGIC;
 const int relayActiveTime = 500;
 int door1_lastStatusValue = 2;
 int door2_lastStatusValue = 2;
+unsigned long door1_lastSwitchTime = 0;
+unsigned long door2_lastSwitchTime = 0;
+int debounceTime = 5000;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -191,16 +194,24 @@ void publish_door2_status() {
 void check_door1_status() {
   int currentStatusValue = digitalRead(door1_statusPin);
   if (currentStatusValue != door1_lastStatusValue) {
-    publish_door1_status();
-    door1_lastStatusValue = currentStatusValue;
+    unsigned int currentTime = millis();
+    if (currentTime - door1_lastSwitchTime >= debounceTime) {
+      publish_door1_status();
+      door1_lastStatusValue = currentStatusValue;
+      door1_lastSwitchTime = currentTime;
+    }
   }
 }
 
 void check_door2_status() {
   int currentStatusValue = digitalRead(door2_statusPin);
   if (currentStatusValue != door2_lastStatusValue) {
-    publish_door2_status();
-    door2_lastStatusValue = currentStatusValue;
+    unsigned int currentTime = millis();
+    if (currentTime - door2_lastSwitchTime >= debounceTime) {
+      publish_door2_status();
+      door2_lastStatusValue = currentStatusValue;
+      door2_lastSwitchTime = currentTime;
+    }
   }
 }
 
@@ -320,6 +331,7 @@ void setup() {
 
   // Setup serial output, connect to wifi, connect to MQTT broker, set MQTT message callback
   Serial.begin(115200);
+  Serial.println("Starting GarHAge...");
   setup_wifi();
   client.setServer(mqtt_broker, 1883);
   client.setCallback(callback);
