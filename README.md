@@ -192,7 +192,17 @@ If using a different ESP8266 microcontroller, follow that device's instructions 
 Open the Serial Monitor via `Tools - Serial Monitor`. Reset your microcontroller. If all is working correctly, you should see the following messages:
 
 ```
+Starting GarHAge...
 
+Connecting to your-wifi-ssid
+..
+WiFi connected
+IP address: 192.168.88.131
+Attempting MQTT connection...Connected!
+Subscribing to garage/door/1/action...
+Subscribing to garage/door/2/action...
+Door 1 closed! Publishing to garage/door/1/status...
+Door 2 closed! Publishing to garage/door/2/status...
 ```
 
 If all appears to be working correctly, disconnect GarHAge from your computer and prepare to install in your garage.
