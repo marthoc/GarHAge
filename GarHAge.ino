@@ -307,6 +307,7 @@ void reconnect() {
 }
 
 void setup() {
+  Serial.println("Starting GarHAge...");
   // Setup the output and input pins used in the sketch
   // Set the lastStatusValue variables to the state of the status pins at setup time
   pinMode(door1_openPin, OUTPUT);
