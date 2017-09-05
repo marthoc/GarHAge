@@ -307,7 +307,6 @@ void reconnect() {
 }
 
 void setup() {
-  Serial.println("Starting GarHAge...");
   // Setup the output and input pins used in the sketch
   // Set the lastStatusValue variables to the state of the status pins at setup time
   pinMode(door1_openPin, OUTPUT);
@@ -332,6 +331,7 @@ void setup() {
 
   // Setup serial output, connect to wifi, connect to MQTT broker, set MQTT message callback
   Serial.begin(115200);
+  Serial.println("Starting GarHAge...");
   setup_wifi();
   client.setServer(mqtt_broker, 1883);
   client.setCallback(callback);
