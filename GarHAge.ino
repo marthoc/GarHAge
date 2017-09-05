@@ -55,7 +55,7 @@ int door1_lastStatusValue = 2;
 int door2_lastStatusValue = 2;
 unsigned long door1_lastSwitchTime = 0;
 unsigned long door2_lastSwitchTime = 0;
-int debounceTime = 50;
+int debounceTime = 5000;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
