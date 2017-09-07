@@ -25,6 +25,12 @@
 #define MQTT_USERNAME "your-mqtt-username"
 #define MQTT_PASSWORD "your-mqtt-password"
 
+// Home Assistant Workaround Parameters (temporary until a HASS bug is resolved)
+
+#define HOMEASSISTANT true
+#define HASS_BIRTH_TOPIC "hass/status"
+#define HASS_BIRTH_PAYLOAD "online"
+
 // Door 1 Parameters
 
 #define DOOR1_ALIAS "Door 1"
