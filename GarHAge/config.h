@@ -1,6 +1,6 @@
 /*   
  * GarHAge
- * aka the Home-Assistant-friendly ESP8266-based MQTT Garage Door Controller
+ * a Home-Automation-friendly ESP8266-based MQTT Garage Door Controller
  * Licensed under the MIT License, Copyright (c) 2017 marthoc
  * 
  * User-configurable Parameters 
