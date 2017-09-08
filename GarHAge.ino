@@ -270,11 +270,12 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     publish_door2_status();
   }
   // Temporary code to listen for and respond to HASS birth message
-  else if (requestedDoor == hassBirthTopic && requestedAction == hassBirthPayload)
+  else if (requestedDoor == hassBirthTopic && requestedAction == hassBirthPayload) {
     Serial.println("Received HASS birth message... Publishing status update(s)...");
     publish_door1_status();
     if (door2_enabled) { publish_door2_status(); 
     }
+  }  
   else { Serial.println("Unrecognized action payload... taking no action!");
   }
 }
