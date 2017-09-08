@@ -24,6 +24,8 @@ When the `STATE` payload is received on either of these topics, GarHAge publishe
 
 When the state of a garage door changes (because GarHAge has triggered the door to open or close, or because the door has been opened or closed via a remote, pushbutton switch, or manually), GarHAge publishes the status (`open` or `closed`) of the relevant garage door to `garage/door/1/status` or `garage/door/2/status`. These messages are published with the "retain" flag set.
 
+_Note: To address a current issue in Home Assistant that may result in the cover or binary sensor platforms not showing the correct garage door status (open/closed) after a HASS restart, GarHAge can also subscribe to Home Assistant's_ `birth_message` _topic (by default_ `hass/status`_) and listen for the_ `birth_message` _payload (by default_ `online`_). When this message is received, GarHAge will publish a status update for Door 1 and Door 2 (if enabled) to ensure that the garage door status (open/closed) is displayed in the HASS GUI for both the cover and binary sensor platforms. Until this issue is resolved in HASS, I recommend enabling the relevant config option (i.e. set HOMEASSISTANT to_ `true`_) and add the relevant lines to your configuration.yaml. Details are set out in the sections that follow.
+
 
 ## Hardware
 
