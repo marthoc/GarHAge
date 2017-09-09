@@ -24,7 +24,7 @@ When the `STATE` payload is received on either of these topics, GarHAge publishe
 
 When the state of a garage door changes (because GarHAge has triggered the door to open or close, or because the door has been opened or closed via a remote, pushbutton switch, or manually), GarHAge publishes the status (`open` or `closed`) of the relevant garage door to `garage/door/1/status` or `garage/door/2/status`. These messages are published with the "retain" flag set.
 
-_Note: To address a current issue in Home Assistant that may result in the cover or binary sensor platforms not showing the correct garage door status (open/closed) after a HASS restart, GarHAge can also subscribe to Home Assistant's_ `birth_message` _topic (by default_ `hass/status`_) and listen for the_ `birth_message` _payload (by default_ `online`_). When this message is received, GarHAge will publish a status update for Door 1 and Door 2 (if enabled) to ensure that the garage door status (open/closed) is displayed in the HASS GUI for both the cover and binary sensor platforms. Until this issue is resolved in HASS, I recommend enabling the relevant config option (i.e. set HOMEASSISTANT to_ `true`_) and add the relevant lines to your configuration.yaml. Details are set out in the sections that follow.
+_Note: To address a current issue in Home Assistant that may result in MQTT platforms not showing the correct garage door status (open/closed) after a HASS restart, GarHAge can also subscribe to Home Assistant's_ `birth_message` _topic (by default_ `hass/status`_) and listen for the_ `birth_message` _payload (by default_ `online`_). When this message is received, GarHAge will publish a status update for Door 1 and Door 2 (if enabled) to ensure that the garage door status (open/closed) is displayed in the HASS GUI for both the cover and binary sensor platforms._
 
 
 ## Hardware
@@ -63,9 +63,9 @@ Accordingly, this guide is written with the NodeMCU in mind.
 
 But, Garhage should also work with the Adafruit HUZZAH, Wemos D1, or similar, though you may need to adjust the GPIO ports used by the sketch to match the ESP8266 ports that your microcontroller makes available.
 
-#### 2. Dual-relay module with active-high inputs
+#### 2. Dual 5v relay module with active-high inputs
 
-A dual-relay module (as opposed to individual 5v relays) makes setup easy: just plug jumper wires from the module's VCC, CH1, CH2, and GND pins to the NodeMCU. These relay modules generally also include LEDs to ease troubleshooting. 
+A dual 5v relay module (as opposed to individual 5v relays) makes setup easy: just plug jumper wires from the module's VCC, CH1, CH2, and GND pins to the NodeMCU. These relay modules generally also include LEDs to ease troubleshooting. 
 
 Most importantly, because the relay module is powered by 5v, its inputs can be triggered by the NodeMCU's GPIOs.
 
@@ -77,11 +77,11 @@ GarHAge will work with both normally-open and normally-closed reed switches (be 
 
 #### 4. 5v MicroUSB power supply
 
-Power your NodeMCU via the same type of power supply used to charge Android phones or a power a RaspberryPi. Powering the NodeMCU via MicroUSB is important since (on non-LoLin variant NodeMCU boards) the relay module can then be powered via the NodeMCU VIN port.
+Power your NodeMCU via the same type of power supply used to charge Android phones or power a RaspberryPi. Powering the NodeMCU via MicroUSB is important since the relay module can then be powered via the NodeMCU VIN (or VU on the LoLin variant) port.
 
 #### 5. Mini solderless breadboard (170 tie-point)
 
-The NodeMCU mounts to this breadboard nicely, leaving one female port next to each NodeMCU port and making it easy to use male-to-female jumper wires to make connections from the NodeMCU to the dual-relay module. The bell wire attached to the reed switches will also plug into the breadboard ports, making for a clean and solderless installation. Finally, these mini breadboards often also have an adhesive backing, making mounting in your project box easy.
+The NodeMCU mounts to this breadboard nicely, leaving one female port next to each NodeMCU port and making it easy to use male-to-female jumper wires to make connections from the NodeMCU to the relay module. The bell wire attached to the reed switches will also plug into the breadboard ports, making for a clean and solderless installation. Finally, these mini breadboards often also have an adhesive backing, making mounting in your project box easy.
 
 #### 6. - 8. Miscellaneous parts
 
@@ -123,75 +123,141 @@ _IMPORTANT: No modification of the sketch code in GarHAge.ino is necessary (or a
 
 #### Wifi Parameters
 
-`WIFI_SSID "your-wifi-ssid"` The wifi ssid GarHAge will connect to; place between quotation marks.
+`WIFI_SSID "your-wifi-ssid"` 
 
-`WIFI_PASSWORD "your-wifi-password"` The wifi ssid's password; place between quotation marks.
+The wifi ssid GarHAge will connect to. Must be placed within quotation marks.
+
+`WIFI_PASSWORD "your-wifi-password"` 
+
+The wifi ssid's password. Must be placed within quotation marks.
 
 #### Static IP Parameters
 
-`STATIC_IP false` Set to `true` to use the IP / GATEWAY / SUBNET parameters that follow, `false` to use DHCP. (Default: false)
+`STATIC_IP false` 
 
-`IP 192,168,1,100` The static IP you want to assign to your device. _(Default: 192.168.1.100)_
+Set to `true` to use the IP / GATEWAY / SUBNET parameters that follow. Set to `false` to use DHCP. _(Default: false)_
 
-`GATEWAY 192,168,1,1` The gateway you want your device to use. _(Default: 192.168.1.1)_
+`IP 192,168,1,100` 
 
-`SUBNET 255,255,255,0` The subnet mask you want your device to use. _(Default: 255.255.255.0)_
+The static IP you want to assign to GarHAge. _(Default: 192.168.1.100)_
 
-_Note: There are commas (,), not periods (.), in the IP / GATEWAY / SUBNET parameters above!_
+`GATEWAY 192,168,1,1` 
+
+The gateway you want GarHAge to use. _(Default: 192.168.1.1)_
+
+`SUBNET 255,255,255,0` 
+
+The subnet mask you want GarHAge to use. _(Default: 255.255.255.0)_
+
+_Note: There are commas (,) not periods (.) in the IP / GATEWAY / SUBNET parameters above!_
 
 #### MQTT Parameters
 
-`MQTT_BROKER "w.x.y.z"` The IP address of your MQTT broker; place between quotation marks.
+`MQTT_BROKER "w.x.y.z"` 
 
-`MQTT_CLIENTID "GarHAge"` The Client ID you want GarHAge to use. _(Default: Garhage)_
+The IP address of your MQTT broker. Must be placed within quotation marks.
 
-`MQTT_USERNAME "your-mqtt-username"` The username for your MQTT broker; use "" for no authentication; place between quotation marks.
+`MQTT_CLIENTID "GarHAge"` 
 
-`MQTT_PASSWORD "your-mqtt-password"` The password for your MQTT broker; use "" for no authentication; place between quotation marks.
+The Client ID you want GarHAge to use. Should be unique among all the devices connected to your broker. Must be placed within quotation marks. _(Default: GarHAge)_
+
+`MQTT_USERNAME "your-mqtt-username"` 
+
+The username required to authenticate to your MQTT broker. Must be placed within quotation marks. Use "" (i.e. a pair of quotation marks) if your broker does not require authentication.
+
+`MQTT_PASSWORD "your-mqtt-password"` 
+
+The password required to authenticate to your MQTT broker. Must be placed within quotation marks. Use "" (i.e. a pair of quotation marks) if your broker does not require authentication.
 
 #### Door 1 Parameters
 
-`DOOR1_ALIAS "Door 1"` The alias to be used for Door 1 in serial messages; place between quotation marks. _(Default: Door 1)_
+`DOOR1_ALIAS "Door 1"` 
 
-`MQTT_DOOR1_ACTION_TOPIC "garage/door/1/action"` The topic GarHAge will subscribe to for action commands for Door 1; place between quotation marks. _(Default: garage/door/1/action)_
+The alias to be used for Door 1 in serial messages. Must be placed within quotation marks. _(Default: Door 1)_
 
-`MQTT_DOOR1_STATUS_TOPIC "garage/door/1/status"` The topic GarHAge will publish status updates to for Door 1; place between quotation marks. _(Default: garage/door/1/status)_
+`MQTT_DOOR1_ACTION_TOPIC "garage/door/1/action"` 
 
-`DOOR1_OPEN_PIN D2` The GPIO pin connected to the relay connected to your garage door opener's open terminals. _(Default: NodeMCU D2 / Arduino 4)_
+The topic GarHAge will subscribe to for action commands for Door 1. Must be placed within quotation marks. _(Default: garage/door/1/action)_
 
-`DOOR1_CLOSE_PIN D2` The GPIO pin connected to the relay connected to your garage door opener's close terminals. If your garage door opener is like most, the same terminals control open and close via a momentary connection of the terminals - in this case, set DOOR1_CLOSE_PIN and DOOR1_OPEN_PIN to the same pin. _(Default: NodeMCU D2 / Arduino 4)_
+`MQTT_DOOR1_STATUS_TOPIC "garage/door/1/status"` 
 
-`DOOR1_STATUS_PIN D5` The GPIO pin connected to the reed/magnetic switch attached to Door 1. _(Default: NodeMCU D5 / Arduino 14)_
+The topic GarHAge will publish Door 1's status to. Must be placed within quotation marks. _(Default: garage/door/1/status)_
 
-`DOOR1_STATUS_SWITCH_LOGIC "NO"` The type of reed/magnetic switch used for Door 1; `"NO` for normally-open; `"NC"` for normally-closed; place between quotation marks. _(Default: NO)_
+`DOOR1_OPEN_PIN D2` 
+
+The GPIO pin connected to the relay that is connected to Door 1's garage door opener's open terminals. _(Default: NodeMCU D2 / Arduino 4)_
+
+`DOOR1_CLOSE_PIN D2` 
+
+The GPIO pin connected to the relay that is connected to Door 1's garage door opener's close terminals. If your garage door opener is like most (all?), the same terminals control open and close via a momentary connection of the terminals. In this case, set DOOR1_CLOSE_PIN and DOOR1_OPEN_PIN to the same pin. _(Default: NodeMCU D2 / Arduino 4)_
+
+`DOOR1_STATUS_PIN D5` 
+
+The GPIO pin connected to the reed/magnetic switch attached to Door 1. _(Default: NodeMCU D5 / Arduino 14)_
+
+`DOOR1_STATUS_SWITCH_LOGIC "NO"` 
+
+The type of reed/magnetic switch used for Door 1. Must be placed within quotation marks. Set to `"NO` for normally-open. Set to `"NC"` for normally-closed. _(Default: NO)_
 
 #### Door 2 Parameters
 
-`DOOR2_ENABLED false` `True` to enable Door 2; `false` to disable Door 2. _(Default: false)_
+`DOOR2_ENABLED false`
 
-`DOOR2_ALIAS "Door 2"` The alias to be used for Door 2 in serial messages; place between quotation marks. _(Default: Door 2)_
+Set to `true` to enable GarHAge to control/monitor Door 2. Set to `false` to disable Door 2. _(Default: false)_
 
-`MQTT_DOOR2_ACTION_TOPIC "garage/door/2/action"` The topic GarHAge will subscribe to for action commands for Door 2; place between quotation marks. _(Default: garage/door/2/action)_
+`DOOR2_ALIAS "Door 2"` 
 
-`MQTT_DOOR2_STATUS_TOPIC "garage/door/2/status"` The topic GarHAge will publish status updates to for Door 2; place between quotation marks. _(Default: garage/door/2/status)_
+The alias to be used for Door 2 in serial messages. Must be placed within quotation marks. _(Default: Door 2)_
 
-`DOOR2_OPEN_PIN D1` The GPIO pin connected to the relay connected to your garage door opener's open terminals. _(Default: NodeMCU D1 / Arduino 5)_
+`MQTT_DOOR2_ACTION_TOPIC "garage/door/2/action"` 
 
-`DOOR2_CLOSE_PIN D1` The GPIO pin connected to the relay connected to your garage door opener's close terminals. If your garage door opener is like most, the same terminals control open and close via a momentary connection of the terminals - in this case, set DOOR2_CLOSE_PIN and DOOR2_OPEN_PIN to the same pin. _(Default: NodeMCU D1 / Arduino 5)_
+The topic GarHAge will subscribe to for action commands for Door 2. Must be placed within quotation marks. _(Default: garage/door/2/action)_
 
-`DOOR2_STATUS_PIN D5` The GPIO pin connected to the reed/magnetic switch attached to Door 2. _(Default: NodeMCU D6 / Arduino 12)_
+`MQTT_DOOR2_STATUS_TOPIC "garage/door/2/status"` 
 
-`DOOR2_STATUS_SWITCH_LOGIC "NO"` The type of reed/magnetic switch used for Door 2; `"NO` for normally-open; `"NC"` for normally-closed; place between quotation marks. _(Default: NO)_
+The topic GarHAge will publish Door 2's status to. Must be placed within quotation marks. _(Default: garage/door/2/status)_
+
+`DOOR2_OPEN_PIN D1` 
+
+The GPIO pin connected to the relay that is connected to Door 2's garage door opener's open terminals. _(Default: NodeMCU D1 / Arduino 5)_
+
+`DOOR2_CLOSE_PIN D1` 
+
+The GPIO pin connected to the relay that is connected to Door 2's garage door opener's close terminals. If your garage door opener is like most (all?), the same terminals control open and close via a momentary connection of the terminals. In this case, set DOOR2_CLOSE_PIN and DOOR2_OPEN_PIN to the same pin. _(Default: NodeMCU D1 / Arduino 5)_
+
+`DOOR2_STATUS_PIN D6` 
+
+The GPIO pin connected to the reed/magnetic switch attached to Door 2. _(Default: NodeMCU D6 / Arduino 12)_
+
+`DOOR2_STATUS_SWITCH_LOGIC "NO"` 
+
+The type of reed/magnetic switch used for Door 2. Must be placed within quotation marks. Set to `"NO` for normally-open. Set to `"NC"` for normally-closed. _(Default: NO)_
+
+#### Home Assistant Workaround Parameters
+
+_Note: These parameters are temporary until a bug in HASS (and perhaps the underlying Paho MQTT library that HASS relies on for MQTT communication) is resolved. It appears that, on restart, HASS does not properly resubscribe to topics it was previously subscribed to, such that it does not receive retained messages on the MQTT broker when it resubscribes. GarHAge addresses this problem by listening for a "birth message" that HASS can send when it connects to the MQTT broker. When GarHAge receives this message, it publishes the status of Door 1 and Door 2 (if enabled) on MQTT_DOOR1_STATUS_TOPIC and MQTT_DOOR2_STATUS_TOPIC, ensuring that HASS will receive these messages. Until the HASS/Paho bug is resolved, if you are using HASS I recommend using the below parameters; otherwise, if HASS is stopped and restarted the cover platform will show an "unknown" state and the binary sensor platform will show "closed", regardless the actual state of the door, until the first time the door state changes.
+
+`HOMEASSISTANT true`
+
+Set to `true` if using Home Assistant. Set to `false` if not using Home Assistant. Note that `true` will also require you to configure HASS's configuration.yaml to enable the birth_message (set out below). _(Default: true)_
+
+`HASS_BIRTH_TOPIC "hass/status"`
+
+The topic GarHAge will subscribe to to listen for HASS's birth message. Must be placed within quotation marks. _(Default: hass/status)_
+
+`HASS_BIRTH_PAYLOAD "online"`
+
+The payload HASS will send on the `HASS_BIRTH_TOPIC` when it connects to the MQTT broker. Must be placed within quotation marks. _(Default: online)_
 
 ### 3. Upload the sketch to your NodeMCU / microcontroller
 
 If using the NodeMCU, connect it to your computer via MicroUSB; press and hold the reset button on the NodeMCU, press and hold the Flash button on the NodeMCU, then release the Reset button. Select `Sketch - Upload` in the Arduino IDE.
 
-If using a different ESP8266 microcontroller, follow that device's instructions for flashing your device.
+If using a different ESP8266 microcontroller, follow that device's instructions for putting it into flashing/programming mode.
 
 ### 4. Check the Arduino IDE Serial Monitor
 
-Open the Serial Monitor via `Tools - Serial Monitor`. Reset your microcontroller. If all is working correctly, you should see the following messages:
+Open the Serial Monitor via `Tools - Serial Monitor`. Reset your microcontroller. If all is working correctly, you should see something similar to the following messages:
 
 ```
 Starting GarHAge...
@@ -199,7 +265,7 @@ Starting GarHAge...
 Connecting to your-wifi-ssid
 ..
 WiFi connected
-IP address: 192.168.88.131
+IP address: 192.168.1.100
 Attempting MQTT connection...Connected!
 Subscribing to garage/door/1/action...
 Subscribing to garage/door/2/action...
@@ -207,8 +273,7 @@ Door 1 closed! Publishing to garage/door/1/status...
 Door 2 closed! Publishing to garage/door/2/status...
 ```
 
-If all appears to be working correctly, disconnect GarHAge from your computer and prepare to install in your garage.
-
+If you receive these (or similar) messages, all appears to be working correctly. Disconnect GarHAge from your computer and prepare to install in your garage.
 
 ## Installing GarHAge
 
@@ -225,7 +290,21 @@ _Done!_
 
 ## Configuring Home Assistant
 
-GarHAGE supports both Home Assistant's "MQTT Cover" and "MQTT Binary Sensor" platforms. Add the following to your `configuration.yaml`.
+GarHAGE supports both Home Assistant's "MQTT Cover" and "MQTT Binary Sensor" platforms. Add the following configuration snippets to your `configuration.yaml` to enable either or both platforms.
+
+### HASS's Birth Message
+
+To be used in conjunction with the "Home Assistant Workaround Parameters" in config.h. These must be set to take advantage of the GarHAge functionality described along with those parameters that addresses a current bug in HASS.
+
+Add the `birth_message` parameters to the `mqtt` stanza in configuration.yaml:
+
+```
+mqtt:
+  broker: your.broker.ip.address
+  birth_message:
+    topic: "hass/status"
+    payload: "online"
+```
 
 ### MQTT Cover: Basic configuration
 
@@ -242,9 +321,11 @@ cover:
     command_topic: "garage/door/2/action"
 ```
 
-_Note: GarHAge uses Home Assistant's defaults and, as such, the above minimal configuration will work._
+_Note: GarHAge's default parameters match Home Assistant's defaults and, as such, the above minimal configuration will work._
 
 ### MQTT Cover: Complete configuration
+
+_Note: If you want to guard against your GarHAge configuration breaking if a Home Assistant update changes one of its defaults, the complete configuration below can be added._
 
 ```
 cover:
@@ -275,7 +356,7 @@ cover:
     state_closed: "closed"
 ```
 
-_Note: Setting_ `payload_stop` _to_ `STATE` _allows you to trigger a status update from GarHAge for a Door by pressing the stop button for that door in the HASS GUI. The stop button is otherwise unused._
+_Note: Setting_ `payload_stop` _to_ `STATE` _allows you to trigger a status update from GarHAge for a Door by pressing the stop button for that door in the HASS GUI. The stop button in the HASS GUI is otherwise unused and the `STATE` payload is otherwise uncalled._
 
 ### MQTT Binary Sensor
 
@@ -309,8 +390,8 @@ _Forthcoming. Please submit a pull request with a working OpenHAB configuration 
 Fork this repository and submit a pull request.
 
 
-## Issues/Bug Reports
+## Issues/Bug Reports/Feature Requests
 
-Please open an issue in this repository and describe your issue in as much detail as possible or the steps necessary to replicate the bug. It will also be helpful to include the content of your config.h in code tags and indicate whether (and how) you modified GarHAge.ino.
+Please open an issue in this repository and describe your issue in as much detail as possible with the steps necessary to replicate the bug. It will also be helpful to include the content of your config.h in code tags and indicate whether (and how) you modified GarHAge.ino.
 
 Please also request new features via issues!
