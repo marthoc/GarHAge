@@ -159,7 +159,7 @@ The IP address of your MQTT broker. Must be placed within quotation marks.
 
 `MQTT_CLIENTID "GarHAge"` 
 
-The Client ID you want GarHAge to use. Should be unique among all the devices connected to your broker. Must be placed within quotation marks. _(Default: Garhage)_
+The Client ID you want GarHAge to use. Should be unique among all the devices connected to your broker. Must be placed within quotation marks. _(Default: GarHAge)_
 
 `MQTT_USERNAME "your-mqtt-username"` 
 
