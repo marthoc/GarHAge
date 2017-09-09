@@ -11,7 +11,7 @@ GarHAge has both hardware and software components. The required hardware compone
 
 Best of all, if you select the proper parts, building and installing a GarHAge requires **no soldering**!
 
-##Table of Contents
+## Table of Contents
 
 * [GarHAge](#garhage)
   * [a Home\-Automation\-friendly ESP8266\-based MQTT Garage Door Controller](#a-home-automation-friendly-esp8266-based-mqtt-garage-door-controller)
