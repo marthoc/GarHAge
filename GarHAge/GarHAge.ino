@@ -273,6 +273,8 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
   // Temporary code to listen for and respond to HASS birth message
   else if (requestedDoor == hassBirthTopic && requestedAction == hassBirthPayload) {
     Serial.println("Received HASS birth message... Publishing status update(s)...");
+    Serial.println("Delaying 10s to allow HASS to finish startup...");
+    delay(10000);
     publish_door1_status();
     if (door2_enabled) { publish_door2_status(); 
     }
