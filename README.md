@@ -310,11 +310,11 @@ GarHAGE supports both Home Assistant's "MQTT Cover" and "MQTT Binary Sensor" pla
 
 ### HASS Automation Workaround
 
-_Testing has shown that the MQTT platforms in Home Assistant sometimes do not update the status of an entity (such as the cover or binary sensor) in accordance with a retained message on the status topic on HASS start or restart. This can leave the cover entity in an "unknown" state, and the binary sensor may show "closed" even if the door is open. 
+_Testing has shown that the MQTT platforms in Home Assistant sometimes do not update the status of an entity (such as the cover or binary sensor) in accordance with a retained message on the status topic on HASS start or restart. This can leave the cover entity in an "unknown" state, and the binary sensor may show "closed" even if the door is open._
 
-_The entities will, however, update to show the correct state when the door next changes state and GarHAge publishes the state to the door's status topic. 
+_The entities will, however, update to show the correct state when the door next changes state and GarHAge publishes the state to the door's status topic._ 
 
-_A temporary workaround (until this issue is resolved in HASS, or possibly in the underlying Paho MQTT library used in HASS) is to use an automation to send the "STATE" payload to the doors' action topics on Home Assistant start. This will ensure that the cover and binary sensor show the correct door state on HASS start and restart.
+_A temporary workaround (until this issue is resolved in HASS, or possibly in the underlying Paho MQTT library used in HASS) is to use an automation to send the "STATE" payload to the doors' action topics on Home Assistant start. This will ensure that the cover and binary sensor show the correct door state on HASS start and restart._
 
 Place the following in your `automations.yaml` (adjusting if you have only one door controlled by GarHAge); be sure to change `id: ABC` to suit your setup.
 
