@@ -46,8 +46,3 @@
 #define DOOR2_STATUS_PIN D6
 #define DOOR2_STATUS_SWITCH_LOGIC "NO"
 
-// Home Assistant Workaround Parameters (temporary until a HASS bug is resolved)
-
-#define HOMEASSISTANT true
-#define HASS_BIRTH_TOPIC "hass/status"
-#define HASS_BIRTH_PAYLOAD "online"

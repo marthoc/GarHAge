@@ -57,12 +57,6 @@ unsigned long door1_lastSwitchTime = 0;
 unsigned long door2_lastSwitchTime = 0;
 int debounceTime = 2000;
 
-// Temporary HASS workaround variables
-
-const boolean homeassistant = HOMEASSISTANT;
-const char* hassBirthTopic = HASS_BIRTH_TOPIC;
-const char* hassBirthPayload = HASS_BIRTH_PAYLOAD;
-
 WiFiClient espClient;
 PubSubClient client(espClient);
 
@@ -269,13 +263,6 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     Serial.print(door2_alias);
     Serial.println("!");
     publish_door2_status();
-  }
-  // Temporary code to listen for and respond to HASS birth message
-  else if (requestedDoor == hassBirthTopic && requestedAction == hassBirthPayload) {
-    Serial.println("Received HASS birth message... Publishing status update(s)...");
-    publish_door1_status();
-    if (door2_enabled) { publish_door2_status(); 
-    }
   }  
   else { Serial.println("Unrecognized action payload... taking no action!");
   }
@@ -303,15 +290,8 @@ void reconnect() {
         Serial.println("...");
         client.subscribe(mqtt_door2_action_topic);
       }
-      // Temporary code to subscribe to HASS birth topic
-      if (homeassistant) {
-        Serial.print("Subscribing to ");
-        Serial.print(hassBirthTopic);
-        Serial.println("...");
-        client.subscribe(hassBirthTopic);
-      }
 
-      // Publish the current door status on connect/reconnect to ensure HA status is synced with whatever happened while disconnected
+      // Publish the current door status on connect/reconnect to ensure status is synced with whatever happened while disconnected
       publish_door1_status();
       if (door2_enabled) { publish_door2_status();
       }
