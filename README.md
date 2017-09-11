@@ -34,13 +34,11 @@ Best of all, if you select the proper parts, building and installing a GarHAge r
       * [MQTT Parameters](#mqtt-parameters)
       * [Door 1 Parameters](#door-1-parameters)
       * [Door 2 Parameters](#door-2-parameters)
-      * [Home Assistant Workaround Parameters](#home-assistant-workaround-parameters)
     * [3\. Upload the sketch to your NodeMCU / microcontroller](#3-upload-the-sketch-to-your-nodemcu--microcontroller)
     * [4\. Check the Arduino IDE Serial Monitor](#4-check-the-arduino-ide-serial-monitor)
   * [Installing GarHAge](#installing-garhage)
   * [Configuring Home Assistant](#configuring-home-assistant)
-    * [HASS's Birth Message](#hasss-birth-message)
-    * [HASS Automation as a Better Workaround than birth_message](#hass-automation-as-a-better-workaround-than-birth_message)
+    * [HASS Automation Workaround](#hass-automation-workaround)
     * [MQTT Cover: Basic configuration](#mqtt-cover-basic-configuration)
     * [MQTT Cover: Complete configuration](#mqtt-cover-complete-configuration)
     * [MQTT Binary Sensor](#mqtt-binary-sensor)
@@ -56,11 +54,9 @@ When the `OPEN` payload is received on either of these topics, GarHAge momentari
 
 When the `CLOSE` payload is received on either of these topics, GarHAge momentarily activates a relay connected to the relevant garage door opener to cause the door to close. By default, GarHAge is configured to activate the same relay for the `OPEN` and `CLOSE` payloads.
 
-When the `STATE` payload is received on either of these topics, GarHAge publishes the status (`open` or `closed`) of the relevant garage door to the configurable topic `garage/door/1/status` or `garage/door/2/status`. These messages are published with the "retain" flag set.
+When the `STATE` payload is received on either of these topics, GarHAge publishes the status (`open` or `closed`) of the relevant garage door to the configurable topic `garage/door/1/status` or `garage/door/2/status`. These messages are published with the "retain" flag set. _(Note: To address a current issue in Home Assistant that may result in MQTT platforms not showing the correct garage door status (open/closed) after a HASS restart, I recommend creating an automation in Home Assistant that publishes the `STATE` payload on HASS start. An example is provided in the [Configuring Home Assistant](#configuring-home-assistant) section of this documentation.)_
 
 When the state of a garage door changes (because GarHAge has triggered the door to open or close, or because the door has been opened or closed via a remote, pushbutton switch, or manually), GarHAge publishes the status (`open` or `closed`) of the relevant garage door to `garage/door/1/status` or `garage/door/2/status`. These messages are published with the "retain" flag set.
-
-_Note: To address a current issue in Home Assistant that may result in MQTT platforms not showing the correct garage door status (open/closed) after a HASS restart, GarHAge can also subscribe to Home Assistant's_ `birth_message` _topic (by default_ `hass/status`_) and listen for the_ `birth_message` _payload (by default_ `online`_). When this message is received, GarHAge will publish a status update for Door 1 and Door 2 (if enabled) to ensure that the garage door status (open/closed) is displayed in the HASS GUI for both the cover and binary sensor platforms._
 
 
 ## Hardware
@@ -269,22 +265,6 @@ The GPIO pin connected to the reed/magnetic switch attached to Door 2. _(Default
 
 The type of reed/magnetic switch used for Door 2. Must be placed within quotation marks. Set to `"NO` for normally-open. Set to `"NC"` for normally-closed. _(Default: NO)_
 
-#### Home Assistant Workaround Parameters
-
-_Note: These parameters are temporary until a bug in HASS (and perhaps the underlying Paho MQTT library that HASS relies on for MQTT communication) is resolved. It appears that, on restart, HASS does not properly resubscribe to topics it was previously subscribed to, such that it does not receive retained messages on the MQTT broker when it resubscribes. GarHAge addresses this problem by listening for a "birth message" that HASS can send when it connects to the MQTT broker. When GarHAge receives this message, it publishes the status of Door 1 and Door 2 (if enabled) on MQTT_DOOR1_STATUS_TOPIC and MQTT_DOOR2_STATUS_TOPIC, ensuring that HASS will receive these messages. Until the HASS/Paho bug is resolved, if you are using HASS I recommend using the below parameters; otherwise, if HASS is stopped and restarted the cover platform will show an "unknown" state and the binary sensor platform will show "closed", regardless the actual state of the door, until the first time the door state changes.
-
-`HOMEASSISTANT true`
-
-Set to `true` if using Home Assistant. Set to `false` if not using Home Assistant. Note that `true` will also require you to configure HASS's configuration.yaml to enable the birth_message (set out below). _(Default: true)_
-
-`HASS_BIRTH_TOPIC "hass/status"`
-
-The topic GarHAge will subscribe to to listen for HASS's birth message. Must be placed within quotation marks. _(Default: hass/status)_
-
-`HASS_BIRTH_PAYLOAD "online"`
-
-The payload HASS will send on the `HASS_BIRTH_TOPIC` when it connects to the MQTT broker. Must be placed within quotation marks. _(Default: online)_
-
 ### 3. Upload the sketch to your NodeMCU / microcontroller
 
 If using the NodeMCU, connect it to your computer via MicroUSB; press and hold the reset button on the NodeMCU, press and hold the Flash button on the NodeMCU, then release the Reset button. Select `Sketch - Upload` in the Arduino IDE.
@@ -328,23 +308,13 @@ _Done!_
 
 GarHAGE supports both Home Assistant's "MQTT Cover" and "MQTT Binary Sensor" platforms. Add the following configuration snippets to your `configuration.yaml` to enable either or both platforms.
 
-### HASS's Birth Message
+### HASS Automation Workaround
 
-To be used in conjunction with the "Home Assistant Workaround Parameters" in config.h. These must be set to take advantage of the GarHAge functionality described along with those parameters that addresses a current bug in HASS.
+_Testing has shown that the MQTT platforms in Home Assistant sometimes do not update the status of an entity (such as the cover or binary sensor) in accordance with a retained message on the status topic on HASS start or restart. This can leave the cover entity in an "unknown" state, and the binary sensor may show "closed" even if the door is open. 
 
-Add the `birth_message` parameters to the `mqtt` stanza in `configuration.yaml`:
+_The entities will, however, update to show the correct state when the door next changes state and GarHAge publishes the state to the door's status topic. 
 
-```
-mqtt:
-  broker: your.broker.ip.address
-  birth_message:
-    topic: "hass/status"
-    payload: "online"
-```
-
-### HASS Automation as a Better Workaround than birth_message
-
-_Testing has shown that the "birth_message" workaround often still leaves the MQTT cover in an "unknown" state. A more reliable solution is to use an automation to send the "STATE" payload to one or both doors' action topics on Home Assistant start. Consider GarHAge's "birth_message" code and parameters deprecated and to be removed in the next feature release._
+_A temporary workaround (until this issue is resolved in HASS, or possibly in the underlying Paho MQTT library used in HASS) is to use an automation to send the "STATE" payload to the doors' action topics on Home Assistant start. This will ensure that the cover and binary sensor show the correct door state on HASS start and restart.
 
 Place the following in your `automations.yaml` (adjusting if you have only one door controlled by GarHAge); be sure to change `id: ABC` to suit your setup.
 
@@ -438,6 +408,9 @@ binary_sensor:
     qos: 0  
 ```
 
+### HASS Example Automations
+
+_Forthcoming!_
 
 ## Configuring OpenHAB
 
