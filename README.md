@@ -40,6 +40,7 @@ Best of all, if you select the proper parts, building and installing a GarHAge r
   * [Installing GarHAge](#installing-garhage)
   * [Configuring Home Assistant](#configuring-home-assistant)
     * [HASS's Birth Message](#hasss-birth-message)
+    * [HASS Automation as a Better Workaround than birth_message](#hass-automation-as-a-better-workaround-than-birth_message)
     * [MQTT Cover: Basic configuration](#mqtt-cover-basic-configuration)
     * [MQTT Cover: Complete configuration](#mqtt-cover-complete-configuration)
     * [MQTT Binary Sensor](#mqtt-binary-sensor)
@@ -331,7 +332,7 @@ GarHAGE supports both Home Assistant's "MQTT Cover" and "MQTT Binary Sensor" pla
 
 To be used in conjunction with the "Home Assistant Workaround Parameters" in config.h. These must be set to take advantage of the GarHAge functionality described along with those parameters that addresses a current bug in HASS.
 
-Add the `birth_message` parameters to the `mqtt` stanza in configuration.yaml:
+Add the `birth_message` parameters to the `mqtt` stanza in `configuration.yaml`:
 
 ```
 mqtt:
@@ -339,6 +340,29 @@ mqtt:
   birth_message:
     topic: "hass/status"
     payload: "online"
+```
+
+### HASS Automation as a Better Workaround than birth_message
+
+_Testing has shown that the "birth_message" workaround often still leaves the MQTT cover in an "unknown" state. A more reliable solution is to use an automation to send the "STATE" payload to one or both doors' action topics on Home Assistant start. Consider GarHAge's "birth_message" code and parameters deprecated and to be removed in the next feature release._
+
+Place the following in your `automations.yaml` (adjusting if you have only one door controlled by GarHAge); be sure to change `id: ABC` to suit your setup.
+
+```
+- id: ABC
+  alias: Update garage door state on startup
+  trigger:
+    - platform: homeassistant
+      event: start
+  action:
+    - service: mqtt.publish
+      data:
+        topic: "garage/door/1/action"
+        payload: "STATE"
+    - service: mqtt.publish
+      data:
+        topic: "garage/door/2/action"
+        payload: "STATE"
 ```
 
 ### MQTT Cover: Basic configuration
