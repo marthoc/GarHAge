@@ -529,6 +529,8 @@ You will also need to add the following two automations to your `automations.yam
 
 In the first automation, replace `notify.ios_your_device_name_here` with the name assigned to your device by Home Assistant (for example, if Home Assistant knows your device as "steves_iphone", your notify statement would be: `notify.ios_steves_iphone`.
 
+Of course, you can replace `30` with any length of time in minutes you wish.
+
 In both automations, be sure to replace `cover.garage_door_1` if the  name of your garage door in Home Assistant is different.
 
 Restart Home Assistant for the configuration and automation changes to take effect.
