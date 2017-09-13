@@ -42,6 +42,7 @@ Best of all, if you select the proper parts, building and installing a GarHAge r
     * [MQTT Cover: Basic configuration](#mqtt-cover-basic-configuration)
     * [MQTT Cover: Complete configuration](#mqtt-cover-complete-configuration)
     * [MQTT Binary Sensor](#mqtt-binary-sensor)
+    * [HASS Example Automations](#hass-example-automations)
   * [Configuring OpenHAB](#configuring-openhab)
   * [Contributing](#contributing)
   * [Issues/Bug Reports/Feature Requests](#issuesbug-reportsfeature-requests)
@@ -494,7 +495,7 @@ If you want to be required to authenticate (i.e. enter your passcode or unlock w
 You will also need to add the following two automations to your `automations.yaml`:
 
 ```
-- id: eight
+- id: xyz
   alias: Notify when garage door has been open for 30 mins
   trigger:
     - platform: state
@@ -510,7 +511,7 @@ You will also need to add the following two automations to your `automations.yam
           push:
             category: "GARAGE"
 
-- id: nine
+- id: xyz
   alias: Close garage when triggered from ios notification
   trigger:
     - platform: event
