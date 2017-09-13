@@ -307,7 +307,7 @@ _Done!_
 
 ## Configuring Home Assistant
 
-GarHAGE supports both Home Assistant's "MQTT Cover" and "MQTT Binary Sensor" platforms. Add the following configuration snippets to your `configuration.yaml` to enable either or both platforms.
+GarHAGE supports both Home Assistant's "MQTT Cover" and "MQTT Binary Sensor" platforms.
 
 ### HASS Automation Workaround
 
@@ -317,10 +317,10 @@ _The entities will, however, update to show the correct state when the door next
 
 _A temporary workaround (until this issue is resolved in HASS, or possibly in the underlying Paho MQTT library used in HASS) is to use an automation to send the "STATE" payload to the doors' action topics on Home Assistant start. This will ensure that the cover and binary sensor show the correct door state on HASS start and restart._
 
-Place the following in your `automations.yaml` (adjusting if you have only one door controlled by GarHAge); be sure to change `id: ABC` to suit your setup.
+Place the following in your `automations.yaml` (adjusting if you have only one door controlled by GarHAge); replace `id: xyz` with the next sequential automation number according to your own `automations.yaml`.
 
 ```
-- id: ABC
+- id: xyz
   alias: Update garage door state on startup
   trigger:
     - platform: homeassistant
@@ -456,7 +456,7 @@ Replace `notify.ios_your_device_name_here` with the name assigned to your device
 
 Be sure to replace `cover.garage_door_1` if the  name of your garage door in Home Assistant is different.
 
-If you wish to notify only when the garage door either opens _or_ closes, add a `to` statement to the trigger following `entity_id` and specify either "open" or "close", e.g.:
+If you wish to notify only when the garage door either opens _or_ closes, add a `to` statement to the trigger following `entity_id` and specify either "open" or "closed", e.g.:
 
 ```
 - id: xyz
