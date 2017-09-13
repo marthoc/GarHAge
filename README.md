@@ -386,7 +386,7 @@ cover:
     state_closed: "closed"
 ```
 
-_Note: Setting_ `payload_stop` _to_ `STATE` _allows you to trigger a status update from GarHAge for a Door by pressing the stop button for that door in the HASS GUI. The stop button in the HASS GUI is otherwise unused and the `STATE` payload is otherwise uncalled._
+_Note: Setting_ `payload_stop` _to_ `STATE` _allows you to trigger a status update from GarHAge for a Door by pressing the stop button for that door in the HASS GUI. The stop button in the HASS GUI is otherwise unused._
 
 ### MQTT Binary Sensor
 
@@ -413,6 +413,26 @@ binary_sensor:
 
 In the examples that follow, replace `id: xyz` with the next sequential automation number according to your own `automations.yaml`.
 
+#### Close garage door if open for longer than 30 minutes
+
+Place the following in your `automations.yaml`:
+
+```
+- id: xyz
+  alias: Close garage door if open for longer than 30 minutes
+  trigger:
+    - platform: state
+      entity_id: cover.garage_door_1
+      to: "open"
+      for:
+        minutes: 30
+  action:
+    - service: cover.close_cover
+      entity_id: cover.garage_door_1
+```
+
+Of course, you can replace `30` with any length of time in minutes you wish. Be sure to replace `cover.garage_door_1` if the  name of your garage door in Home Assistant is different.
+
 #### Notify iOS device when garage door opens or closes
 
 To use this automation, you must have the Home Assistant iOS app installed on your iPhone and must have the `ios:` and `notify:` platforms in your `configuration.yaml`.
@@ -434,11 +454,13 @@ Place the following in your `automations.yaml`:
 
 Replace `notify.ios_your_device_name_here` with the name assigned to your device by Home Assistant (for example, if Home Assistant knows your device as "steves_iphone", your notify statement would be: `notify.ios_steves_iphone`.
 
+Be sure to replace `cover.garage_door_1` if the  name of your garage door in Home Assistant is different.
+
 If you wish to notify only when the garage door either opens _or_ closes, add a `to` statement to the trigger following `entity_id` and specify either "open" or "close", e.g.:
 
 ```
 - id: xyz
-  alias: Notify iOS device when garage door opens or closes
+  alias: Notify iOS device when garage door opens
   trigger:
     - platform: state
       entity_id: cover.garage_door_1
@@ -449,27 +471,9 @@ If you wish to notify only when the garage door either opens _or_ closes, add a 
         message: "Garage Door 1 just opened!"
 ```
 
-#### Close garage door if open for longer than 30 minutes
-
-Place the following in your `automations.yaml`:
-
-```
-- id: xyz
-  alias: Close garage door if open for longer than 30 minutes
-  trigger:
-    - platform: state
-      entity_id: cover.garage_door_1
-      to: "open"
-      for:
-        minutes: 30
-  action:
-    - service: cover.close_cover
-      entity_id: cover.garage_door_1
-```
-
 #### Notify iOS device when garage door is open for longer than 30 minutes, with an actionable notification
 
-An actionable notification will raise a notification on your iPhone with a button allowing you to close the garage door directly from the notification (i.e. without needing to open the Home Assistant app).
+An actionable notification will raise a notification on your iPhone with a "Close Garage" button allowing you to close the garage door directly from the notification (i.e. without needing to open the Home Assistant app).
 
 To use this automation, you must have the Home Assistant iOS app installed on your iPhone. You must also have the `notify:` platform in your `configuration.yaml`.
 
@@ -496,7 +500,7 @@ You will also need to add the following two automations to your `automations.yam
 
 ```
 - id: xyz
-  alias: Notify when garage door has been open for 30 mins
+  alias: Notify iOS device when garage door has been open for 30 minutes
   trigger:
     - platform: state
       entity_id: cover.garage_door_1
@@ -512,7 +516,7 @@ You will also need to add the following two automations to your `automations.yam
             category: "GARAGE"
 
 - id: xyz
-  alias: Close garage when triggered from ios notification
+  alias: Close garage when triggered from iOS notification
   trigger:
     - platform: event
       event_type: ios.notification_action_fired
@@ -524,6 +528,8 @@ You will also need to add the following two automations to your `automations.yam
 ```
 
 In the first automation, replace `notify.ios_your_device_name_here` with the name assigned to your device by Home Assistant (for example, if Home Assistant knows your device as "steves_iphone", your notify statement would be: `notify.ios_steves_iphone`.
+
+In both automations, be sure to replace `cover.garage_door_1` if the  name of your garage door in Home Assistant is different.
 
 Restart Home Assistant for the configuration and automation changes to take effect.
 
