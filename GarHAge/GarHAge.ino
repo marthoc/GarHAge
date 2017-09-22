@@ -57,6 +57,13 @@ unsigned long door1_lastSwitchTime = 0;
 unsigned long door2_lastSwitchTime = 0;
 int debounceTime = 2000;
 
+String availabilityBase = MQTT_CLIENTID;
+String availabilitySuffix = "/availability";
+String availabilityTopicStr = availabilityBase + availabilitySuffix;
+const char* availabilityTopic = availabilityTopicStr.c_str();
+const char* birthMessage = "online";
+const char* lwtMessage = "offline";
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 
@@ -216,6 +223,18 @@ void check_door2_status() {
   }
 }
 
+// Function that publishes birthMessage
+
+void publish_birth_message() {
+  // Publish the birthMessage
+  Serial.print("Publishing birth message ");
+  Serial.print(birthMessage);
+  Serial.print(" to ");
+  Serial.print(availabilityTopic);
+  Serial.println("...");
+  client.publish(availabilityTopic, birthMessage, true);
+}
+
 // Function that toggles the relevant relay-connected output pin
 
 void toggleRelay(int pin) {
@@ -244,6 +263,7 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     Serial.print("Publishing on-demand status update for ");
     Serial.print(door1_alias);
     Serial.println("!");
+    publish_birth_message();
     publish_door1_status();
   }
   else if (requestedDoor == mqtt_door2_action_topic && requestedAction == "OPEN") {
@@ -262,6 +282,7 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     Serial.print("Publishing on-demand status update for ");
     Serial.print(door2_alias);
     Serial.println("!");
+    publish_birth_message();
     publish_door2_status();
   }  
   else { Serial.println("Unrecognized action payload... taking no action!");
@@ -275,8 +296,11 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect(mqtt_clientId, mqtt_username, mqtt_password)) {
+    if (client.connect(mqtt_clientId, mqtt_username, mqtt_password, availabilityTopic, 0, true, lwtMessage)) {
       Serial.println("Connected!");
+
+      // Publish the birth message on connect/reconnect
+      publish_birth_message();
 
       // Subscribe to the action topics to listen for action messages
       Serial.print("Subscribing to ");
