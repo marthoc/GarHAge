@@ -55,9 +55,11 @@ When the `OPEN` payload is received on either of these topics, GarHAge momentari
 
 When the `CLOSE` payload is received on either of these topics, GarHAge momentarily activates a relay connected to the relevant garage door opener to cause the door to close. By default, GarHAge is configured to activate the same relay for the `OPEN` and `CLOSE` payloads.
 
-When the `STATE` payload is received on either of these topics, GarHAge publishes the status (`open` or `closed`) of the relevant garage door to the configurable topic `garage/door/1/status` or `garage/door/2/status`. These messages are published with the "retain" flag set. _(Note: To address a current issue in Home Assistant that may result in MQTT platforms not showing the correct garage door status (open/closed) after a HASS restart, I recommend creating an automation in Home Assistant that publishes the `STATE` payload on HASS start. An example is provided in the [Configuring Home Assistant](#configuring-home-assistant) section of this documentation.)_
+When the `STATE` payload is received on either of these topics, GarHAge publishes the status (`open` or `closed`) of the relevant garage door to the configurable topic `garage/door/1/status` or `garage/door/2/status`. These messages are published with the "retain" flag set. _(Note: To address a current issue in Home Assistant that may result in MQTT platforms not showing the correct garage door status (open/closed) after a HASS restart, I recommend creating an automation in Home Assistant that publishes the `STATE` payload for each door on HASS start. An example is provided in the [Configuring Home Assistant](#configuring-home-assistant) section of this documentation.)_
 
 When the state of a garage door changes (because GarHAge has triggered the door to open or close, or because the door has been opened or closed via a remote, pushbutton switch, or manually), GarHAge publishes the status (`open` or `closed`) of the relevant garage door to `garage/door/1/status` or `garage/door/2/status`. These messages are published with the "retain" flag set.
+
+GarHAge also publishes a "birth" message on connection to your MQTT broker, and a "last-will-and-testament" message on disconnection from the broker, so that your home automation software can respond appropriately to GarHAge being online or offline.
 
 
 ## Hardware
@@ -344,14 +346,18 @@ cover:
     name: "Garage Door 1"
     state_topic: "garage/door/1/status"
     command_topic: "garage/door/1/action"
+    availability_topic: "GarHAge/availability"
 
   - platform: mqtt
     name: "Garage Door 2"
     state_topic: "garage/door/2/status"
     command_topic: "garage/door/2/action"
+    availability_topic: "GarHAge/availability"
 ```
 
 _Note: GarHAge's default parameters match Home Assistant's defaults and, as such, the above minimal configuration will work._
+
+_Note: the "availability_topic" configuration parameter will be available in Home Assistant as of version 0.54; it allows Home Assistant to display the cover as "unavailable" if GarHAge goes offline unexpectedly. When GarHAge reconnects to your broker, the cover controls will again be available in Home Assistant. GarHAge forms its availability topic by suffixing "/availability" to the MQTT_CLIENTID parameter in config.h, and publishes "online" to that topic when connecting or reconnecting to the broker and "offline" when disconnecting from the broker._
 
 ### MQTT Cover: Complete configuration
 
@@ -397,6 +403,7 @@ binary_sensor:
     state_topic: "garage/door/1/status"
     payload_on: "open"
     payload_off: "closed"
+    availability_topic: "GarHAge/availability"
     device_class: opening
     qos: 0
 
@@ -405,9 +412,12 @@ binary_sensor:
     state_topic: "garage/door/2/status"
     payload_on: "open"
     payload_off: "closed"
+    availability_topic: "GarHAge/availability"
     device_class: opening
     qos: 0  
 ```
+
+_Note: the "availability_topic" configuration parameter will be available in Home Assistant as of version 0.54; it allows Home Assistant to display the binary sensor as "unavailable" if GarHAge goes offline unexpectedly. When GarHAge reconnects to your broker, the door state will again be displayed in Home Assistant. GarHAge forms its availability topic by suffixing "/availability" to the MQTT_CLIENTID parameter in config.h, and publishes "online" to that topic when connecting or reconnecting to the broker and "offline" when disconnecting from the broker._
 
 ### HASS Example Automations
 
