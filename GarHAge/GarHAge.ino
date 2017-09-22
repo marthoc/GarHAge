@@ -227,9 +227,9 @@ void check_door2_status() {
 
 void publish_birth_message() {
   // Publish the birthMessage
-  Serial.print("Publishing birth message ");
+  Serial.print("Publishing birth message \"");
   Serial.print(birthMessage);
-  Serial.print(" to ");
+  Serial.print("\" to ");
   Serial.print(availabilityTopic);
   Serial.println("...");
   client.publish(availabilityTopic, birthMessage, true);
