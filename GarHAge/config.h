@@ -25,6 +25,10 @@
 #define MQTT_USERNAME "your-mqtt-username"
 #define MQTT_PASSWORD "your-mqtt-password"
 
+// Relay Parameters
+
+#define ACTIVE_HIGH_RELAY true
+
 // Door 1 Parameters
 
 #define DOOR1_ALIAS "Door 1"

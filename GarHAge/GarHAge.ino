@@ -33,6 +33,8 @@ const char* mqtt_clientId = MQTT_CLIENTID;
 const char* mqtt_username = MQTT_USERNAME;
 const char* mqtt_password = MQTT_PASSWORD;
 
+const boolean activeHighRelay = ACTIVE_HIGH_RELAY;
+
 const char* door1_alias = DOOR1_ALIAS;
 const char* mqtt_door1_action_topic = MQTT_DOOR1_ACTION_TOPIC;
 const char* mqtt_door1_status_topic = MQTT_DOOR1_STATUS_TOPIC;
@@ -238,9 +240,16 @@ void publish_birth_message() {
 // Function that toggles the relevant relay-connected output pin
 
 void toggleRelay(int pin) {
-  digitalWrite(pin, HIGH);
-  delay(relayActiveTime);
-  digitalWrite(pin, LOW);
+  if (activeHighRelay) {
+    digitalWrite(pin, HIGH);
+    delay(relayActiveTime);
+    digitalWrite(pin, LOW);
+  }
+  else {
+    digitalWrite(pin, LOW);
+    delay(relayActiveTime);
+    digitalWrite(pin, HIGH);
+  }
 }
 
 // Function called by callback() when a message is received 
@@ -334,29 +343,57 @@ void reconnect() {
 void setup() {
   // Setup the output and input pins used in the sketch
   // Set the lastStatusValue variables to the state of the status pins at setup time
-  pinMode(door1_openPin, OUTPUT);
-  digitalWrite(door1_openPin, LOW);
 
+  // Setup Door 1 pins
+  pinMode(door1_openPin, OUTPUT);
   pinMode(door1_closePin, OUTPUT);
-  digitalWrite(door1_closePin, LOW);
-  
+  // Set output pins LOW with an active-high relay
+  if (activeHighRelay) {
+    digitalWrite(door1_openPin, LOW);
+    digitalWrite(door1_closePin, LOW);
+  }
+  // Set output pins HIGH with an active-low relay
+  else {
+    digitalWrite(door1_openPin, HIGH);
+    digitalWrite(door1_closePin, HIGH);
+  }
+  // Set input pin to use internal pullup resistor
   pinMode(door1_statusPin, INPUT_PULLUP);
+  // Update variable with current door state
   door1_lastStatusValue = digitalRead(door1_statusPin);
 
+  // Setup Door 2 pins
   if (door2_enabled) {
     pinMode(door2_openPin, OUTPUT);
-    digitalWrite(door2_openPin, LOW);
-
     pinMode(door2_closePin, OUTPUT);
-    digitalWrite(door2_closePin, LOW);
-
+    // Set output pins LOW with an active-high relay
+    if (activeHighRelay) {
+      digitalWrite(door2_openPin, LOW);
+      digitalWrite(door2_closePin, LOW);
+    }
+    // Set output pins HIGH with an active-low relay
+    else {
+      digitalWrite(door2_openPin, HIGH);
+      digitalWrite(door2_closePin, HIGH);
+    }
+    // Set input pin to use internal pullup resistor
     pinMode(door2_statusPin, INPUT_PULLUP);
+    // Update variable with current door state
     door2_lastStatusValue = digitalRead(door2_statusPin);
   }
 
   // Setup serial output, connect to wifi, connect to MQTT broker, set MQTT message callback
   Serial.begin(115200);
+
   Serial.println("Starting GarHAge...");
+
+  if (activeHighRelay) {
+    Serial.println("Relay mode: Active-High");
+  }
+  else {
+    Serial.println("Relay mode: Active-Low");
+  }
+
   setup_wifi();
   client.setServer(mqtt_broker, 1883);
   client.setCallback(callback);
