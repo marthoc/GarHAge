@@ -53,11 +53,11 @@ GarHAge subscribes to a configurable MQTT topic for each of two garage doors (by
 
 When the `OPEN` payload is received on either of these topics, GarHAge momentarily activates a relay connected to the relevant garage door opener to cause the door to open.
 
-When the `CLOSE` payload is received on either of these topics, GarHAge momentarily activates a relay connected to the relevant garage door opener to cause the door to close. By default, GarHAge is configured to activate the same relay for the `OPEN` and `CLOSE` payloads.
+When the `CLOSE` payload is received on either of these topics, GarHAge momentarily activates a relay connected to the relevant garage door opener to cause the door to close. By default, GarHAge is configured to activate the same relay for the `OPEN` and `CLOSE` payloads, as most (if not all) garage door openers operate manually by momentarily closing the same circuit to both open and close.
 
 When the `STATE` payload is received on either of these topics, GarHAge publishes the status (`open` or `closed`) of the relevant garage door to the configurable topic `garage/door/1/status` or `garage/door/2/status`. These messages are published with the "retain" flag set. _(Note: To address a current issue in Home Assistant that may result in MQTT platforms not showing the correct garage door status (open/closed) after a HASS restart, I recommend creating an automation in Home Assistant that publishes the `STATE` payload for each door on HASS start. An example is provided in the [Configuring Home Assistant](#configuring-home-assistant) section of this documentation.)_
 
-When the state of a garage door changes (because GarHAge has triggered the door to open or close, or because the door has been opened or closed via a remote, pushbutton switch, or manually), GarHAge publishes the status (`open` or `closed`) of the relevant garage door to `garage/door/1/status` or `garage/door/2/status`. These messages are published with the "retain" flag set.
+When the state of a garage door changes (either because GarHAge has triggered the door to open or close, or because the door has been opened or closed via a remote, pushbutton switch, or manually), GarHAge publishes the status (`open` or `closed`) of the relevant garage door to `garage/door/1/status` or `garage/door/2/status`. These messages are published with the "retain" flag set.
 
 GarHAge also publishes a "birth" message on connection to your MQTT broker, and a "last-will-and-testament" message on disconnection from the broker, so that your home automation software can respond appropriately to GarHAge being online or offline.
 
@@ -71,7 +71,7 @@ Building GarHAge to control two garage door openers requires:
 | No. | Qty | Part | Link | Approx Price |
 | --- | --- | ---- | ---- | ------------ |
 | 1. | 1 | ESP8266-based microcontroller (e.g. NodeMCU) | [Link](https://www.amazon.com/ESP8266-NodeMcu-development-Internet-HONG111/dp/B06XBSV95D/ref=sr_1_6?ie=UTF8&qid=1504449670&sr=8-6&keywords=nodemcu) | $ 7.00 |
-| 2. | 1 | Dual-relay module with active-high inputs | [Link](http://www.robotshop.com/en/2-channel-5v-relay-module.html) | $ 4.00 |
+| 2. | 1 | Dual-relay module | [Link](http://www.robotshop.com/en/2-channel-5v-relay-module.html) | $ 4.00 |
 | 3. | 2 | Reed/Magnetic door switches | [Link](http://a.co/bEomwwP) | $ 12.00 |
 | 4. | 1 | 5v MicroUSB power supply | [Link](http://www.robotshop.com/en/wall-adapter-power-supply-5vdc-2a.html) | $ 6.00 |
 | 5. | 1 | Mini solderless breadboard (170 tie-point) | [Link](http://www.robotshop.com/en/170-tie-point-mini-self-adhesive-solderless-breadboard-white.html) | $ 4.00 |
@@ -98,17 +98,17 @@ Accordingly, this guide is written with the NodeMCU in mind.
 
 But, Garhage should also work with the Adafruit HUZZAH, Wemos D1, or similar, though you may need to adjust the GPIO ports used by the sketch to match the ESP8266 ports that your microcontroller makes available.
 
-#### 2. Dual 5v relay module with active-high inputs
+#### 2. Dual 5v relay module
 
 A dual 5v relay module (as opposed to individual 5v relays) makes setup easy: just plug jumper wires from the module's VCC, CH1, CH2, and GND pins to the NodeMCU. These relay modules generally also include LEDs to ease troubleshooting.
 
 Most importantly, because the relay module is powered by 5v, its inputs can be triggered by the NodeMCU's GPIOs.
 
-GarHAge will only work with relay modules that are active-high (meaning that the relay is triggered by a HIGH output from a GPIO pin). Note that many modules available on Amazon, eBay, or AliExpress are active-low, which is **not supported** by GarHAge.
+GarHAge will work with relay modules that are active-high or active-low; if using an active-low relay, be sure to set the relevant configuration parameter in config.h, described below, and test thoroughly to be sure that your garage door opener(s) are not inadvertently triggered after a momentary power-loss.
 
 #### 3. Reed/magnetic door switches
 
-GarHAge will work with both normally-open and normally-closed reed switches (be sure to set the relevant config parameter to match the type of switch in use). Many switches with screw terminals are available, making placement and wiring easy.
+GarHAge will work with both normally-open and normally-closed reed switches; if using a normally-closed switch, be sure to set the relevant configuration parameter in config.h, described below, to match the type of switch in use. Many switches with screw terminals are available, making placement and wiring easy.
 
 #### 4. 5v MicroUSB power supply
 
@@ -204,6 +204,12 @@ The username required to authenticate to your MQTT broker. Must be placed within
 
 The password required to authenticate to your MQTT broker. Must be placed within quotation marks. Use "" (i.e. a pair of quotation marks) if your broker does not require authentication.
 
+#### Relay Parameters
+
+`ACTIVE_HIGH_RELAY true`
+
+Set to `false` if using an active-low relay module. Set to `true` if using an active-high relay module. _(Default: true)_
+
 #### Door 1 Parameters
 
 `DOOR1_ALIAS "Door 1"`
@@ -280,12 +286,11 @@ Open the Serial Monitor via `Tools - Serial Monitor`. Reset your microcontroller
 
 ```
 Starting GarHAge...
+Relay mode: Active-High
 
-Connecting to your-wifi-ssid
-..
-WiFi connected
-IP address: 192.168.1.100
+Connecting to your-wifi-ssid.. WiFi connected - IP address: 192.168.1.100
 Attempting MQTT connection...Connected!
+Publishing birth message "online" to GarHAge/availability...
 Subscribing to garage/door/1/action...
 Subscribing to garage/door/2/action...
 Door 1 closed! Publishing to garage/door/1/status...
@@ -313,7 +318,7 @@ GarHAGE supports both Home Assistant's "MQTT Cover" and "MQTT Binary Sensor" pla
 
 ### HASS Automation Workaround
 
-_Testing has shown that the MQTT platforms in Home Assistant sometimes do not update the status of an entity (such as the cover or binary sensor) in accordance with a retained message on the status topic on HASS start or restart. This can leave the cover entity in an "unknown" state, and the binary sensor may show "closed" even if the door is open._
+_Testing has shown that the MQTT platform in Home Assistant sometimes does not update the status of an entity (such as the cover or binary sensor) in accordance with a retained message on the status topic on HASS start or restart. This can leave the cover entity in an "unknown" state, and the binary sensor may show "closed" even if the door is open._
 
 _The entities will, however, update to show the correct state when the door next changes state and GarHAge publishes the state to the door's status topic._ 
 
@@ -357,7 +362,7 @@ cover:
 
 _Note: GarHAge's default parameters match Home Assistant's defaults and, as such, the above minimal configuration will work._
 
-_Note: the "availability_topic" configuration parameter will be available in Home Assistant as of version 0.54; it allows Home Assistant to display the cover as "unavailable" if GarHAge goes offline unexpectedly. When GarHAge reconnects to your broker, the cover controls will again be available in Home Assistant. GarHAge forms its availability topic by suffixing "/availability" to the MQTT_CLIENTID parameter in config.h, and publishes "online" to that topic when connecting or reconnecting to the broker and "offline" when disconnecting from the broker._
+_Note: the "availability_topic" configuration parameter will be available in Home Assistant as of version 0.55; it allows Home Assistant to display the cover as "unavailable" if GarHAge goes offline unexpectedly. When GarHAge reconnects to your broker, the cover controls will again be available in Home Assistant. GarHAge forms its availability topic by suffixing "/availability" to the MQTT_CLIENTID parameter in config.h, and publishes "online" to that topic when connecting or reconnecting to the broker and "offline" when disconnecting from the broker._
 
 ### MQTT Cover: Complete configuration
 
@@ -369,6 +374,7 @@ cover:
     name: "Garage Door 1"
     state_topic: "garage/door/1/status"
     command_topic: "garage/door/1/action"
+    availability_topic: "GarHAge/availability"
     qos: 0
     optimistic: false
     retain: false
@@ -377,11 +383,14 @@ cover:
     payload_stop: "STATE"
     state_open: "open"
     state_closed: "closed"
+    payload_available: "online"
+    payload_not_available: "offline"
 
   - platform: mqtt
     name: "Garage Door 2"
     state_topic: "garage/door/2/status"
     command_topic: "garage/door/2/action"
+    availability_topic: "GarHAge/availability"
     qos: 0
     optimistic: false
     retain: false
@@ -390,6 +399,8 @@ cover:
     payload_stop: "STATE"
     state_open: "open"
     state_closed: "closed"
+    payload_available: "online"
+    payload_not_available: "offline"
 ```
 
 _Note: Setting_ `payload_stop` _to_ `STATE` _allows you to trigger a status update from GarHAge for a Door by pressing the stop button for that door in the HASS GUI. The stop button in the HASS GUI is otherwise unused._
