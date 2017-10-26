@@ -202,7 +202,7 @@ void publish_door2_status() {
 void check_door1_status() {
   int currentStatusValue = digitalRead(door1_statusPin);
   if (currentStatusValue != door1_lastStatusValue) {
-    unsigned int currentTime = millis();
+    unsigned long currentTime = millis();
     if (currentTime - door1_lastSwitchTime >= debounceTime) {
       publish_door1_status();
       door1_lastStatusValue = currentStatusValue;
@@ -214,7 +214,7 @@ void check_door1_status() {
 void check_door2_status() {
   int currentStatusValue = digitalRead(door2_statusPin);
   if (currentStatusValue != door2_lastStatusValue) {
-    unsigned int currentTime = millis();
+    unsigned long currentTime = millis();
     if (currentTime - door2_lastSwitchTime >= debounceTime) {
       publish_door2_status();
       door2_lastStatusValue = currentStatusValue;
