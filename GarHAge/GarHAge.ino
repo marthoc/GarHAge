@@ -6,6 +6,9 @@
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include <ESP8266mDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
 #include "config.h"
 
 // Mapping NodeMCU Ports to Arduino GPIO Pins
@@ -92,6 +95,31 @@ void setup_wifi() {
 
   Serial.print(" WiFi connected - IP address: ");
   Serial.println(WiFi.localIP());
+}
+
+void setup_ota() {
+  ArduinoOTA.setHostname(mqtt_clientId);
+
+  ArduinoOTA.onStart([]() {
+    Serial.println("Start OTA");
+  });
+  ArduinoOTA.onEnd([]() {
+    Serial.println("End OTA");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("OTA Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("OTA Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) Serial.println("OTA Auth Failed");
+    else if (error == OTA_BEGIN_ERROR) Serial.println("OTA Begin Failed");
+    else if (error == OTA_CONNECT_ERROR) Serial.println("OTA Connect Failed");
+    else if (error == OTA_RECEIVE_ERROR) Serial.println("OTA Receive Failed");
+    else if (error == OTA_END_ERROR) Serial.println("OTA End Failed");
+  });
+
+  ArduinoOTA.begin();
+  Serial.println("Ready for OTA Upload...");
 }
 
 // Callback when MQTT message is received; calls triggerDoorAction(), passing topic and payload as parameters
@@ -393,6 +421,7 @@ void setup() {
   }
 
   setup_wifi();
+  setup_ota();
   client.setServer(mqtt_broker, 1883);
   client.setCallback(callback);
 }
@@ -403,6 +432,8 @@ void loop() {
     reconnect();
   }
   client.loop();
+  
+  ArduinoOTA.handle();
   
   // Check door open/closed status each loop and publish changes
   check_door1_status();
