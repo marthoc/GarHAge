@@ -61,6 +61,8 @@ int door2_lastStatusValue = 2;
 unsigned long door1_lastSwitchTime = 0;
 unsigned long door2_lastSwitchTime = 0;
 int debounceTime = 2000;
+String door1_statusString = "";
+String door2_statusString = "";
 
 String availabilityBase = MQTT_CLIENTID;
 String availabilitySuffix = "/availability";
@@ -151,13 +153,15 @@ void publish_door1_status() {
       Serial.print(mqtt_door1_status_topic);
       Serial.println("...");
       client.publish(mqtt_door1_status_topic, "closed", true);
+      door1_statusString = "closed";
     }
     else if (door1_statusSwitchLogic == "NC") {
       Serial.print(door1_alias);
       Serial.print(" open! Publishing to ");
       Serial.print(mqtt_door1_status_topic);
       Serial.println("...");
-      client.publish(mqtt_door1_status_topic, "open", true);      
+      client.publish(mqtt_door1_status_topic, "open", true);
+      door1_statusString = "open";      
     }
     else {
       Serial.println("Error! Specify only either NO or NC for DOOR1_STATUS_SWITCH_LOGIC in config.h! Not publishing...");
@@ -170,13 +174,15 @@ void publish_door1_status() {
       Serial.print(mqtt_door1_status_topic);
       Serial.println("...");
       client.publish(mqtt_door1_status_topic, "open", true);
+      door1_statusString = "open";
     }
     else if (door1_statusSwitchLogic == "NC") {
       Serial.print(door1_alias);
       Serial.print(" closed! Publishing to ");
       Serial.print(mqtt_door1_status_topic);
       Serial.println("...");
-      client.publish(mqtt_door1_status_topic, "closed", true);      
+      client.publish(mqtt_door1_status_topic, "closed", true);
+      door1_statusString = "closed";      
     }
     else {
       Serial.println("Error! Specify only either NO or NC for DOOR1_STATUS_SWITCH_LOGIC in config.h! Not publishing...");
@@ -192,13 +198,15 @@ void publish_door2_status() {
       Serial.print(mqtt_door2_status_topic);
       Serial.println("...");
       client.publish(mqtt_door2_status_topic, "closed", true);
+      door2_statusString = "closed";
     }
     else if (door2_statusSwitchLogic == "NC") {
       Serial.print(door2_alias);
       Serial.print(" open! Publishing to ");
       Serial.print(mqtt_door2_status_topic);
       Serial.println("...");
-      client.publish(mqtt_door2_status_topic, "open", true);      
+      client.publish(mqtt_door2_status_topic, "open", true);
+      door2_statusString = "open";      
     }
     else {
       Serial.println("Error! Specify only either NO or NC for DOOR2_STATUS_SWITCH_LOGIC in config.h! Not publishing...");
@@ -211,13 +219,15 @@ void publish_door2_status() {
       Serial.print(mqtt_door2_status_topic);
       Serial.println("...");
       client.publish(mqtt_door2_status_topic, "open", true);
+      door2_statusString = "open";
     }
     else if (door2_statusSwitchLogic == "NC") {
       Serial.print(door2_alias);
       Serial.print(" closed! Publishing to ");
       Serial.print(mqtt_door2_status_topic);
       Serial.println("...");
-      client.publish(mqtt_door2_status_topic, "closed", true);      
+      client.publish(mqtt_door2_status_topic, "closed", true);
+      door2_statusString = "closed";      
     }
     else {
       Serial.println("Error! Specify only either NO or NC for DOOR2_STATUS_SWITCH_LOGIC in config.h! Not publishing...");
@@ -278,22 +288,63 @@ void toggleRelay(int pin) {
   }
 }
 
+// Functions to check the current door status and return true if status does not match the passed-in parameter 
+// For use in triggerDoorAction()
+// (i.e. the current state does not match the requested state, we are good to take action)
+
+boolean door1_sanityCheck(String state) {
+  if (state != door1_statusString) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
+boolean door2_sanityCheck(String state) {
+  if (state != door2_statusString) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
 // Function called by callback() when a message is received 
 // Passes the message topic as the "requestedDoor" parameter and the message payload as the "requestedAction" parameter
+// Calls doorX_sanityCheck() to verify that the door is in a different state than requested before taking action, else trigger a status update
 
 void triggerDoorAction(String requestedDoor, String requestedAction) {
   if (requestedDoor == mqtt_door1_action_topic && requestedAction == "OPEN") {
-    Serial.print("Triggering ");
-    Serial.print(door1_alias);
-    Serial.println(" OPEN relay!");
-    toggleRelay(door1_openPin);
+    if (door1_sanityCheck("open")) {
+      Serial.print("Triggering ");
+      Serial.print(door1_alias);
+      Serial.println(" OPEN relay!");
+      toggleRelay(door1_openPin);
+    }
+    else {
+      Serial.print("OPEN requested but ");
+      Serial.print(door1_alias);
+      Serial.println(" is already open. Publishing status update instead!");
+      publish_door1_status();
+    }
   }
+
   else if (requestedDoor == mqtt_door1_action_topic && requestedAction == "CLOSE") {
-    Serial.print("Triggering ");
-    Serial.print(door1_alias);
-    Serial.println(" CLOSE relay!");
-    toggleRelay(door1_closePin);
+    if (door1_sanityCheck("closed")) {
+      Serial.print("Triggering ");
+      Serial.print(door1_alias);
+      Serial.println(" CLOSE relay!");
+      toggleRelay(door1_closePin);
+    }
+    else {
+      Serial.print("CLOSE requested but ");
+      Serial.print(door1_alias);
+      Serial.println(" is already closed. Publishing status update instead!");
+      publish_door1_status();
+    }
   }
+
   else if (requestedDoor == mqtt_door1_action_topic && requestedAction == "STATE") {
     Serial.print("Publishing on-demand status update for ");
     Serial.print(door1_alias);
@@ -301,18 +352,37 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     publish_birth_message();
     publish_door1_status();
   }
+
   else if (requestedDoor == mqtt_door2_action_topic && requestedAction == "OPEN") {
-    Serial.print("Triggering ");
-    Serial.print(door2_alias);
-    Serial.println(" OPEN relay!");
-    toggleRelay(door2_openPin);
+    if (door2_sanityCheck("open")) {
+      Serial.print("Triggering ");
+      Serial.print(door2_alias);
+      Serial.println(" OPEN relay!");
+      toggleRelay(door2_openPin);  
+    }
+    else {
+      Serial.print("OPEN requested but ");
+      Serial.print(door2_alias);
+      Serial.println(" is already open. Publishing status update instead!");
+      publish_door2_status();
+    }  
   }
+
   else if (requestedDoor == mqtt_door2_action_topic && requestedAction == "CLOSE") {
-    Serial.print("Triggering ");
-    Serial.print(door2_alias);
-    Serial.println(" CLOSE relay!");
-    toggleRelay(door2_closePin);
+    if (door2_sanityCheck("closed")) {
+      Serial.print("Triggering ");
+      Serial.print(door2_alias);
+      Serial.println(" CLOSE relay!");
+      toggleRelay(door2_closePin);
+    }
+    else {
+      Serial.print("CLOSE requested but ");
+      Serial.print(door2_alias);
+      Serial.println(" is already closed. Publishing status update instead!");
+      publish_door2_status();
+    }
   }
+
   else if (requestedDoor == mqtt_door2_action_topic && requestedAction == "STATE") {
     Serial.print("Publishing on-demand status update for ");
     Serial.print(door2_alias);
@@ -320,7 +390,9 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     publish_birth_message();
     publish_door2_status();
   }  
-  else { Serial.println("Unrecognized action payload... taking no action!");
+
+  else { 
+    Serial.println("Unrecognized action payload... taking no action!");
   }
 }
 
