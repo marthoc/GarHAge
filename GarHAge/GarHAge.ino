@@ -9,6 +9,9 @@
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
+#include <ArduinoJson.h>
+#include <DHT.h>
+#include <Adafruit_Sensor.h>
 #include "config.h"
 
 // Mapping NodeMCU Ports to Arduino GPIO Pins
@@ -55,6 +58,11 @@ const int door2_closePin = DOOR2_CLOSE_PIN;
 const int door2_statusPin = DOOR2_STATUS_PIN;
 const char* door2_statusSwitchLogic = DOOR2_STATUS_SWITCH_LOGIC;
 
+const boolean dht_enabled = DHT_ENABLED;
+const char* mqtt_dht_status_topic = MQTT_DHT_STATUS_TOPIC;
+const unsigned long dht_publish_interval_s = DHT_PUBLISH_INTERVAL;
+unsigned long dht_lastReadTime = 0;
+
 const int relayActiveTime = 500;
 int door1_lastStatusValue = 2;
 int door2_lastStatusValue = 2;
@@ -73,6 +81,7 @@ const char* lwtMessage = "offline";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+DHT dht(DHTPIN, DHTTYPE);
 
 // Wifi setup function
 
@@ -396,6 +405,48 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
   }
 }
 
+// Function that runs in loop() to read and publish values from the DHT sensor
+
+void dht_read_publish() {
+  // Read values from sensor
+  float humidity = dht.readHumidity();
+  float tempC = dht.readTemperature();
+
+  // Check if there was an error reading values
+  if (isnan(humidity) || isnan(tempC)) {
+    Serial.print("Failed to read from DHT sensor; will try again in ");
+    Serial.print(dht_publish_interval_s);
+    Serial.println(" seconds...");
+    return;
+  }
+
+  // Convert celcius to fahrenheit
+  float tempF = tempC * 1.8 + 32;
+
+  // Transform variables into json
+  const size_t bufferSize = JSON_OBJECT_SIZE(3);
+  DynamicJsonBuffer jsonBuffer(bufferSize);
+
+  JsonObject& dht_json = jsonBuffer.createObject();
+  dht_json["humidity"] = humidity;
+  dht_json["temperatureC"] = tempC;
+  dht_json["temperatureF"] = tempF;
+
+  // Prepare the payload for publishing via MQTT
+  String dhtPayloadStr = "";
+  dht_json.printTo(dhtPayloadStr);
+  const char* dhtPayload = dhtPayloadStr.c_str();
+
+  // Publish the payload via MQTT
+  Serial.print("Publishing DHT payload: ");
+  Serial.print(dhtPayload);
+  Serial.print(" to ");
+  Serial.print(mqtt_dht_status_topic);
+  Serial.println("...");
+  client.publish(mqtt_dht_status_topic, dhtPayload, true);
+  
+}
+
 // Function that runs in loop() to connect/reconnect to the MQTT broker, and publish the current door statuses on connect
 
 void reconnect() {
@@ -425,6 +476,12 @@ void reconnect() {
       // Publish the current door status on connect/reconnect to ensure status is synced with whatever happened while disconnected
       publish_door1_status();
       if (door2_enabled) { publish_door2_status();
+      }
+
+      // Publish the current temperature and humidity readings 
+      if (dht_enabled) {
+        dht_read_publish();
+        dht_lastReadTime = millis();
       }
 
     } 
@@ -492,6 +549,14 @@ void setup() {
     Serial.println("Relay mode: Active-Low");
   }
 
+  if (dht_enabled) {
+    dht.begin();
+    Serial.println("DHT sensor: Enabled");
+  }
+  else {
+    Serial.println("DHT sensor: Disabled");
+  }
+  
   setup_wifi();
   setup_ota();
   client.setServer(mqtt_broker, 1883);
@@ -511,4 +576,14 @@ void loop() {
   check_door1_status();
   if (door2_enabled) { check_door2_status(); 
   }
+
+  // Run DHT function to read/publish if enabled and interval is OK
+  if (dht_enabled) {
+    unsigned long currentTime = millis();
+    if (currentTime - dht_lastReadTime > (dht_publish_interval_s * 1000)) {
+      dht_read_publish();
+      dht_lastReadTime = millis();
+    }
+  }
+  
 }
