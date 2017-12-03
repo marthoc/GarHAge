@@ -50,6 +50,24 @@
 #define DOOR2_STATUS_PIN D6
 #define DOOR2_STATUS_SWITCH_LOGIC "NO"
 
+// Aux Door 1 Parameters
+
+#define AUX_DOOR1_ENABLED false
+#define AUX_DOOR1_ALIAS "Aux Door 1"
+#define MQTT_AUX_DOOR1_ACTION_TOPIC "garage/aux_door/1/action"
+#define MQTT_AUX_DOOR1_STATUS_TOPIC "garage/aux_door/1/status"
+#define AUX_DOOR1_STATUS_PIN D7
+#define AUX_DOOR1_STATUS_SWITCH_LOGIC "NO"
+
+// Aux Door 2 Parameters
+
+#define AUX_DOOR2_ENABLED false
+#define AUX_DOOR2_ALIAS "Aux Door 2"
+#define MQTT_AUX_DOOR2_ACTION_TOPIC "garage/aux_door/2/action"
+#define MQTT_AUX_DOOR2_STATUS_TOPIC "garage/aux_door/2/status"
+#define AUX_DOOR2_STATUS_PIN D8
+#define AUX_DOOR2_STATUS_SWITCH_LOGIC "NO"
+
 // Temperature and Humidity Sensor Parameters
 
 #define DHT_ENABLED false
