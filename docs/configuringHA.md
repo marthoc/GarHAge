@@ -1,0 +1,1 @@
+## Configuring Home Assistant
