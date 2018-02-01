@@ -24,15 +24,16 @@ When the state of an auxiliary door changes, GarHAge publishes the status (the p
 
 ### Temperature and Humidity
 
-GarHAge publishes temperature and humidity readings from an attached DHT 11 or 22 sensor to a configurable MQTT topic. (_By default, `garage/dht`._) Readings are published on a configurable interval (_By default, 300 seconds._)
+GarHAge publishes temperature and humidity readings from an attached DHT 11 or 22 sensor on subtopics to a configurable MQTT topic base. (_By default, `garage/dht/status`._) Readings are published to the following topics by default:
 
-The temperature and humidity message is a JSON-formatted payload that contains three self-explanatory name/value pairs and looks similar to the following:
+| Temperature | `garage/dht/status/temperature` |
+| Humidity | `garage/dht/status/humidity` |
 
-```
-{"humidity":50.0,"temperatureC":10.0,"temperatureF":50}
-```
+Temperature is in units of degrees celsius and humidity is in units of percent.
 
-The temperature and humidty message is published at QOS 0. The retain flag is _not_ set.
+Readings are published on a configurable interval (_By default, 300 seconds._) _Readings are published even if they have not changed since the last reading._
+
+The temperature and humidty messages are published at QOS 0. The retain flag is _not_ set on these messages.
 
 ### "Birth" and "Last-Will-and-Testament"
 

@@ -11,15 +11,15 @@ GarHAge allows:
 
 GarHAge is compatible with the following Home Assistant platforms: 
 
-- "MQTT Cover", responding to HA's open and close commands and reporting door status to keep HA's GUI in sync with the garage door state; 
+- "MQTT Cover", responding to Home Assistant's open and close commands and reporting door status to keep the GUI in sync with the garage door state; 
 
-- "MQTT Binary Sensor", reporting door status to keep HA binary sensors for the auxiliary doors in sync with the door state; 
+- "MQTT Binary Sensor", reporting door status to keep binary sensors for the auxiliary doors in sync with the door state; 
 
-- "MQTT Sensor", reporting temperature and humidity readings to keep HA sensors up-to-date.
+- "MQTT Sensor", reporting temperature and humidity readings to keep sensors up-to-date;
 
-- "Template Cover", providing for control of garage door open/close only, and allowing the user to rely on a different means of reporting the door state in HA (e.g. a Zwave/ZigBee tilt sensor or similar).
+- "Template Cover", providing for control of garage door open/close only, and allowing the user to rely on a different means of reporting the door state in Home Assistant (e.g. a Zwave/ZigBee tilt sensor or similar).
 
-Complete HA configuration snippets and sample automations are provided to get your garage connected to HA as quickly and painlessly as possible, but GarHAge should also be compatible with any home automation software that can configure an MQTT cover, rollershutter, garage door, switch, or send commands over MQTT, including OpenHAB.
+Complete Home Assistant configuration snippets and sample automations are provided to get your garage connected to HA as quickly and painlessly as possible, but GarHAge should also be compatible with any home automation software that can configure an MQTT cover, rollershutter, garage door, switch, or send commands over MQTT, including OpenHAB.
 
 GarHAge has both hardware and software components. The required hardware components include an ESP8266-based microcontroller (such as the NodeMCU), a relay module, and reed/magnetic switches. The software component is found in this repo.
 
@@ -30,8 +30,8 @@ Best of all, if you select the proper parts, building and installing GarHAge req
 1. [Hardware](hardware.md)
 1. [Software](software.md)
 1. [Installing GarHAge](installing.md)
-1. [GarHAge MQTT "API"](api.md)
 1. [Configuring Home Assistant](configuringHA.md)
+1. [Roadmap](roadmap.md)
 
 ### Contributing
 
