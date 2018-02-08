@@ -24,6 +24,8 @@
 #define MQTT_CLIENTID "GarHAge"
 #define MQTT_USERNAME "your-mqtt-username"
 #define MQTT_PASSWORD "your-mqtt-password"
+#define HA_MQTT_DISCOVERY false
+#define HA_MQTT_DISCOVERY_PREFIX "homeassistant"
 
 // Relay Parameters
 
@@ -76,4 +78,8 @@
 #define MQTT_DHT_ACTION_TOPIC "garage/dht/action"
 #define MQTT_DHT_STATUS_TOPIC "garage/dht/status"
 #define DHT_PUBLISH_INTERVAL 300
+#define DHT_TEMPERATURE_CELSIUS true
+#define DHT_TEMPERATURE_ALIAS "Garage Temperature"
+#define DHT_HUMIDITY_ALIAS "Garage Humidity"
+
 
