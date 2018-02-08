@@ -73,6 +73,7 @@
 #define DHT_ENABLED false
 #define DHTPIN D4
 #define DHTTYPE DHT11 // or: DHT21 or DHT22
-#define MQTT_DHT_STATUS_TOPIC "garage/dht"
+#define MQTT_DHT_ACTION_TOPIC "garage/dht/action"
+#define MQTT_DHT_STATUS_TOPIC "garage/dht/status"
 #define DHT_PUBLISH_INTERVAL 300
 
