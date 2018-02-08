@@ -73,7 +73,15 @@ const int aux_door2_statusPin = AUX_DOOR2_STATUS_PIN;
 const char* aux_door2_statusSwitchLogic = AUX_DOOR2_STATUS_SWITCH_LOGIC;
 
 const boolean dht_enabled = DHT_ENABLED;
-const char* mqtt_dht_status_topic = MQTT_DHT_STATUS_TOPIC;
+const char* mqtt_dht_action_topic = MQTT_DHT_ACTION_TOPIC;
+String dhtBase = MQTT_DHT_STATUS_TOPIC;
+String dhtTempSuffix = "/temperature";
+String dhtTempTopicStr = dhtBase + dhtTempSuffix;
+const char* dhtTempTopic = dhtTempTopicStr.c_str();
+String dhtHumSuffix = "/humidity";
+String dhtHumTopicStr = dhtBase + dhtHumSuffix;
+const char* dhtHumTopic = dhtHumTopicStr.c_str();
+
 const unsigned long dht_publish_interval_s = DHT_PUBLISH_INTERVAL;
 unsigned long dht_lastReadTime = 0;
 
@@ -550,6 +558,11 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     publish_aux_door2_status();
   }
 
+  else if (requestedDoor == mqtt_dht_action_topic && requestedAction == "STATE") {
+    Serial.print("Publishing on-demand DHT Temperature and Humidity update!");
+    dht_read_publish();
+  }
+
   else { 
     Serial.println("Unrecognized action payload... taking no action!");
   }
@@ -559,42 +572,46 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
 
 void dht_read_publish() {
   // Read values from sensor
-  float humidity = dht.readHumidity();
-  float tempC = dht.readTemperature();
+  float hum = dht.readHumidity();
+  float tempRaw = dht.readTemperature();
 
   // Check if there was an error reading values
-  if (isnan(humidity) || isnan(tempC)) {
+  if (isnan(hum) || isnan(tempRaw)) {
     Serial.print("Failed to read from DHT sensor; will try again in ");
     Serial.print(dht_publish_interval_s);
     Serial.println(" seconds...");
     return;
   }
 
-  // Convert celcius to fahrenheit
-  float tempF = tempC * 1.8 + 32;
+  boolean celsius = DHT_TEMPERATURE_CELSIUS;
+  float temp;
+  if (celsius) {
+    temp = tempRaw;
+  }
+  else {
+    temp = (tempRaw * 1.8 + 32);
+  }
 
-  // Transform variables into json
-  const size_t bufferSize = JSON_OBJECT_SIZE(3);
-  DynamicJsonBuffer jsonBuffer(bufferSize);
+  char payload[4];
 
-  JsonObject& dht_json = jsonBuffer.createObject();
-  dht_json["humidity"] = humidity;
-  dht_json["temperatureC"] = tempC;
-  dht_json["temperatureF"] = tempF;
-
-  // Prepare the payload for publishing via MQTT
-  String dhtPayloadStr = "";
-  dht_json.printTo(dhtPayloadStr);
-  const char* dhtPayload = dhtPayloadStr.c_str();
-
-  // Publish the payload via MQTT
-  Serial.print("Publishing DHT payload: ");
-  Serial.print(dhtPayload);
+  // Publish the temperature payload via MQTT 
+  dtostrf(temp, 4, 0, payload);
+  Serial.print("Publishing DHT Temperature payload: ");
+  Serial.print(payload);
   Serial.print(" to ");
-  Serial.print(mqtt_dht_status_topic);
+  Serial.print(dhtTempTopic);
   Serial.println("...");
-  client.publish(mqtt_dht_status_topic, dhtPayload, true);
-  
+  client.publish(dhtTempTopic, payload, false);
+
+  // Publish the humidity payload via MQTT
+  dtostrf(hum, 4, 0, payload);
+  Serial.print("Publishing DHT Humidity payload: ");
+  Serial.print(payload);
+  Serial.print(" to ");
+  Serial.print(dhtHumTopic);
+  Serial.println("...");
+  client.publish(dhtHumTopic, payload, false);
+
 }
 
 // Function that runs in loop() to connect/reconnect to the MQTT broker, and publish the current door statuses on connect
@@ -650,6 +667,11 @@ void reconnect() {
 
       // Publish the current temperature and humidity readings 
       if (dht_enabled) {
+        Serial.print("Subscribing to ");
+        Serial.print(mqtt_dht_action_topic);
+        Serial.println("...");
+        client.subscribe(mqtt_dht_action_topic);
+        
         dht_read_publish();
         dht_lastReadTime = millis();
       }
