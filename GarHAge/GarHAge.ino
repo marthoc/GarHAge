@@ -107,6 +107,11 @@ const char* availabilityTopic = availabilityTopicStr.c_str();
 const char* birthMessage = "online";
 const char* lwtMessage = "offline";
 
+// Home Assistant MQTT Discovery variables
+
+const boolean discoveryEnabled = HA_MQTT_DISCOVERY;
+String discoveryPrefix = HA_MQTT_DISCOVERY_PREFIX;
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 DHT dht(DHTPIN, DHTTYPE);
@@ -614,6 +619,242 @@ void dht_read_publish() {
 
 }
 
+void publish_ha_mqtt_discovery() {
+  Serial.print("Publishing Home Assistant MQTT Discovery payloads...");
+  publish_ha_mqtt_discovery_door1();
+  if (door2_enabled) {
+    publish_ha_mqtt_discovery_door2();
+  }
+  if (aux_door1_enabled) {
+    publish_ha_mqtt_discovery_auxdoor1();
+  }
+  if (aux_door2_enabled) {
+    publish_ha_mqtt_discovery_auxdoor2();
+  }
+  if (dht_enabled) {
+    publish_ha_mqtt_discovery_temperature();
+    publish_ha_mqtt_discovery_humidity();
+  }
+}
+
+void publish_ha_mqtt_discovery_door1() {
+  const size_t bufferSize = JSON_OBJECT_SIZE(13);
+  DynamicJsonBuffer jsonBuffer(bufferSize);
+
+  JsonObject& root = jsonBuffer.createObject();
+  root["name"] = door1_alias;
+  root["command_topic"] = mqtt_door1_action_topic;
+  root["payload_open"] = "OPEN";
+  root["payload_close"] = "CLOSE";
+  root["payload_stop"] = "STATE";
+  root["state_topic"] = mqtt_door1_status_topic;
+  root["state_open"] = "open";
+  root["state_closed"] = "closed";
+  root["availability_topic"] = availabilityTopic;
+  root["payload_available"] = "online";
+  root["payload_unavailable"] = "offline";
+  root["qos"] = 0;
+  root["retain"] = false;
+
+  // Prepare payload for publishing
+  String payloadStr = "";
+  root.printTo(payloadStr);
+  const char* payload = payloadStr.c_str();
+
+  // Prepare topic for publishing
+  String clientID = MQTT_CLIENTID;
+  String suffix = "/door1/config";
+  String topicStr = discoveryPrefix + "/cover/" + clientID + suffix;
+  const char* topic = topicStr.c_str();
+
+  // Publish payload
+  Serial.print("Publishing MQTT Discovery payload for ");
+  Serial.print(door1_alias);
+  Serial.print(" ...");
+  client.publish(topic, payload, false);
+
+}
+
+void publish_ha_mqtt_discovery_door2() {
+  const size_t bufferSize = JSON_OBJECT_SIZE(13);
+  DynamicJsonBuffer jsonBuffer(bufferSize);
+
+  JsonObject& root = jsonBuffer.createObject();
+  root["name"] = door2_alias;
+  root["command_topic"] = mqtt_door2_action_topic;
+  root["payload_open"] = "OPEN";
+  root["payload_close"] = "CLOSE";
+  root["payload_stop"] = "STATE";
+  root["state_topic"] = mqtt_door2_status_topic;
+  root["state_open"] = "open";
+  root["state_closed"] = "closed";
+  root["availability_topic"] = availabilityTopic;
+  root["payload_available"] = "online";
+  root["payload_unavailable"] = "offline";
+  root["qos"] = 0;
+  root["retain"] = false;
+
+  // Prepare payload for publishing
+  String payloadStr = "";
+  root.printTo(payloadStr);
+  const char* payload = payloadStr.c_str();
+
+  // Prepare topic for publishing
+  String clientID = MQTT_CLIENTID;
+  String suffix = "/door2/config";
+  String topicStr = discoveryPrefix + "/cover/" + clientID + suffix;
+  const char* topic = topicStr.c_str();
+
+  // Publish payload
+  Serial.print("Publishing MQTT Discovery payload for ");
+  Serial.print(door2_alias);
+  Serial.print(" ...");
+  client.publish(topic, payload, false);
+
+}
+
+void publish_ha_mqtt_discovery_auxdoor1() {
+  const size_t bufferSize = JSON_OBJECT_SIZE(8);
+  DynamicJsonBuffer jsonBuffer(bufferSize);
+
+  JsonObject& root = jsonBuffer.createObject();
+  root["name"] = aux_door1_alias;
+  root["payload_on"] = "open";
+  root["payload_off"] = "closed";
+  root["availability_topic"] = availabilityTopic;
+  root["payload_available"] = "online";
+  root["payload_unavailable"] = "offline";
+  root["qos"] = 0;
+  root["device_class"] = "door";
+
+  // Prepare payload for publishing
+  String payloadStr = "";
+  root.printTo(payloadStr);
+  const char* payload = payloadStr.c_str();
+
+  // Prepare topic for publishing
+  String clientID = MQTT_CLIENTID;
+  String suffix = "/auxdoor1/config";
+  String topicStr = discoveryPrefix + "/binary_sensor/" + clientID + suffix;
+  const char* topic = topicStr.c_str();
+
+  // Publish payload
+  Serial.print("Publishing MQTT Discovery payload for ");
+  Serial.print(aux_door1_alias);
+  Serial.print(" ...");
+  client.publish(topic, payload, false);
+
+}
+
+void publish_ha_mqtt_discovery_auxdoor2() {
+  const size_t bufferSize = JSON_OBJECT_SIZE(8);
+  DynamicJsonBuffer jsonBuffer(bufferSize);
+
+  JsonObject& root = jsonBuffer.createObject();
+  root["name"] = aux_door2_alias;
+  root["payload_on"] = "open";
+  root["payload_off"] = "closed";
+  root["availability_topic"] = availabilityTopic;
+  root["payload_available"] = "online";
+  root["payload_unavailable"] = "offline";
+  root["qos"] = 0;
+  root["device_class"] = "door";
+
+  // Prepare payload for publishing
+  String payloadStr = "";
+  root.printTo(payloadStr);
+  const char* payload = payloadStr.c_str();
+
+  // Prepare topic for publishing
+  String clientID = MQTT_CLIENTID;
+  String suffix = "/auxdoor2/config";
+  String topicStr = discoveryPrefix + "/binary_sensor/" + clientID + suffix;
+  const char* topic = topicStr.c_str();
+
+  // Publish payload
+  Serial.print("Publishing MQTT Discovery payload for ");
+  Serial.print(aux_door2_alias);
+  Serial.print(" ...");
+  client.publish(topic, payload, false);
+
+}
+
+void publish_ha_mqtt_discovery_temperature() {
+  const size_t bufferSize = JSON_OBJECT_SIZE(7);
+  DynamicJsonBuffer jsonBuffer(bufferSize);
+
+  boolean celsius = DHT_TEMPERATURE_CELSIUS;
+  if (celsius) {
+    String uom = "°C";
+  }
+  else {
+    String uom = "°F";
+  }
+
+  String alias = DHT_TEMPERATURE_ALIAS;
+
+  JsonObject& root = jsonBuffer.createObject();
+  root["name"] = alias;
+  root["state_topic"] = dhtTempTopic;
+  root["unit_of_measurement"] = uom;
+  root["availability_topic"] = availabilityTopic;
+  root["payload_available"] = "online";
+  root["payload_unavailable"] = "offline";
+  root["qos"] = 0;
+
+  // Prepare payload for publishing
+  String payloadStr = "";
+  root.printTo(payloadStr);
+  const char* payload = payloadStr.c_str();
+
+  // Prepare topic for publishing
+  String clientID = MQTT_CLIENTID;
+  String suffix = "/temperature/config";
+  String topicStr = discoveryPrefix + "/sensor/" + clientID + suffix;
+  const char* topic = topicStr.c_str();
+
+  // Publish payload
+  Serial.print("Publishing MQTT Discovery payload for ");
+  Serial.print(alias);
+  Serial.print(" ...");
+  client.publish(topic, payload, false);
+
+}
+
+void publish_ha_mqtt_discovery_humidity() {
+  const size_t bufferSize = JSON_OBJECT_SIZE(7);
+  DynamicJsonBuffer jsonBuffer(bufferSize);
+
+  String alias = DHT_HUMIDITY_ALIAS;
+
+  JsonObject& root = jsonBuffer.createObject();
+  root["name"] = alias;
+  root["state_topic"] = dhtHumTopic;
+  root["unit_of_measurement"] = "%";
+  root["availability_topic"] = availabilityTopic;
+  root["payload_available"] = "online";
+  root["payload_unavailable"] = "offline";
+  root["qos"] = 0;
+
+  // Prepare payload for publishing
+  String payloadStr = "";
+  root.printTo(payloadStr);
+  const char* payload = payloadStr.c_str();
+
+  // Prepare topic for publishing
+  String clientID = MQTT_CLIENTID;
+  String suffix = "/humidity/config";
+  String topicStr = discoveryPrefix + "/sensor/" + clientID + suffix;
+  const char* topic = topicStr.c_str();
+
+  // Publish payload
+  Serial.print("Publishing MQTT Discovery payload for ");
+  Serial.print(alias);
+  Serial.print(" ...");
+  client.publish(topic, payload, false);
+
+}
+
 // Function that runs in loop() to connect/reconnect to the MQTT broker, and publish the current door statuses on connect
 
 void reconnect() {
@@ -623,6 +864,11 @@ void reconnect() {
     // Attempt to connect
     if (client.connect(mqtt_clientId, mqtt_username, mqtt_password, availabilityTopic, 0, true, lwtMessage)) {
       Serial.println("Connected!");
+
+      // Publish disovery payloads before other messages so that entities are created first
+      if (discoveryEnabled) {
+      publish_ha_mqtt_discovery();
+      }
 
       // Publish the birth message on connect/reconnect
       publish_birth_message();
