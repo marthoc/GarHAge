@@ -14,6 +14,8 @@
 #include <Adafruit_Sensor.h>
 #include "config.h"
 
+const char* garhageVersion = "2.0.0";
+
 // Mapping NodeMCU Ports to Arduino GPIO Pins
 // Allows use of NodeMCU Port nomenclature in config.h
 #define D0 16
@@ -73,14 +75,8 @@ const int aux_door2_statusPin = AUX_DOOR2_STATUS_PIN;
 const char* aux_door2_statusSwitchLogic = AUX_DOOR2_STATUS_SWITCH_LOGIC;
 
 const boolean dht_enabled = DHT_ENABLED;
-const char* mqtt_dht_action_topic = MQTT_DHT_ACTION_TOPIC;
-String dhtBase = MQTT_DHT_STATUS_TOPIC;
-String dhtTempSuffix = "/temperature";
-String dhtTempTopicStr = dhtBase + dhtTempSuffix;
-const char* dhtTempTopic = dhtTempTopicStr.c_str();
-String dhtHumSuffix = "/humidity";
-String dhtHumTopicStr = dhtBase + dhtHumSuffix;
-const char* dhtHumTopic = dhtHumTopicStr.c_str();
+const char* dhtTempTopic = MQTT_TEMPERATURE_TOPIC;
+const char* dhtHumTopic = MQTT_HUMIDITY_TOPIC;
 
 const unsigned long dht_publish_interval_s = DHT_PUBLISH_INTERVAL;
 unsigned long dht_lastReadTime = 0;
@@ -111,6 +107,14 @@ const char* lwtMessage = "offline";
 
 const boolean discoveryEnabled = HA_MQTT_DISCOVERY;
 String discoveryPrefix = HA_MQTT_DISCOVERY_PREFIX;
+
+// GarHAge API topic variables
+// Messages published to the api topic are first processed by processIncomingMessage()
+// processIncomingMessage() calls processAPIMessage(), which determines the appropriate action
+
+String apiSuffix = "/api";
+String apiTopicStr = availabilityBase + apiSuffix;
+const char* apiTopic = apiTopicStr.c_str();
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -166,7 +170,7 @@ void setup_ota() {
   Serial.println("Ready for OTA Upload...");
 }
 
-// Callback when MQTT message is received; calls triggerDoorAction(), passing topic and payload as parameters
+// Callback when MQTT message is received; calls processIncomingMessage(), passing topic and payload as parameters
 
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
@@ -179,10 +183,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
   
   Serial.println();
 
-  String topicToProcess = topic;
+  String incomingTopic = topic;
   payload[length] = '\0';
-  String payloadToProcess = (char*)payload;
-  triggerDoorAction(topicToProcess, payloadToProcess);
+  String incomingPayload = (char*)payload;
+  processIncomingMessage(incomingTopic, incomingPayload);
 }
 
 // Functions that check door status and publish an update when called
@@ -445,7 +449,7 @@ void toggleRelay(int pin) {
 }
 
 // Functions to check the current door status and return true if status does not match the passed-in parameter 
-// For use in triggerDoorAction()
+// For use in processIncomingMessage()
 // (i.e. the current state does not match the requested state, we are good to take action)
 
 boolean door1_sanityCheck(String state) {
@@ -466,12 +470,65 @@ boolean door2_sanityCheck(String state) {
   }
 }
 
+void publish_enabled_doors() {
+  publish_door1_status();
+  if (door2_enabled) { publish_door2_status(); }
+  if (aux_door1_enabled) { publish_aux_door1_status(); }
+  if (aux_door2_enabled) { publish_aux_door2_status(); }
+}
+
+// Function called by processIncomingMessage() when a message matches the API topic
+// Processes the incoming payload on the API topic
+// Supported API calls:
+// STATE_ALL - publishes the current state of all enabled devices (including temp/humidity)
+// STATE_DOORS - publishes the current state of all doors only
+// STATE_DHT - forces a read/publish of temp/humidity
+// DISCOVERY - publishes HA discovery payloads for all enabled devices
+void processAPIMessage(String payload) {
+  if (payload == "STATE_ALL") {
+    Serial.println("API Request: STATE_ALL - Publishing state of all enabled devices...");
+    publish_birth_message();
+    publish_enabled_doors();
+    if (dht_enabled) { dht_read_publish(); 
+    }
+  }
+
+  else if (payload == "STATE_DOORS") {
+    Serial.println("API Request: STATE_DOORS - Publishing state of all enabled doors...");
+    publish_birth_message();
+    publish_enabled_doors();
+  }
+
+  else if (payload == "STATE_DHT") {
+    if (dht_enabled) { 
+      Serial.println("API Request: STATE_DHT - Forcing Temperature and Humidity read/publish...");
+      publish_birth_message();
+      dht_read_publish(); 
+      }
+    else Serial.println("API Request ERROR: STATE_DHT requested but DHT is not enabled!");
+  }
+
+  else if (payload == "DISCOVERY") {
+    if (discoveryEnabled) {
+      Serial.println("API Request: DISCOVERY - Publishing Home Assistant MQTT Discovery payloads...");
+      publish_ha_mqtt_discovery();
+    }
+    else Serial.println("API Request ERROR: DISCOVERY requested but HA MQTT discovery not enabled!");
+  }
+
+  else {
+    Serial.print("API Request ERROR: Payload ");
+    Serial.print(payload);
+    Serial.println(" matches no API function!");
+  }
+}
+
 // Function called by callback() when a message is received 
-// Passes the message topic as the "requestedDoor" parameter and the message payload as the "requestedAction" parameter
+// Passes the message topic as the "topic" parameter and the message payload as the "payload" parameter
 // Calls doorX_sanityCheck() to verify that the door is in a different state than requested before taking action, else trigger a status update
 
-void triggerDoorAction(String requestedDoor, String requestedAction) {
-  if (requestedDoor == mqtt_door1_action_topic && requestedAction == "OPEN") {
+void processIncomingMessage(String topic, String payload) {
+  if (topic == mqtt_door1_action_topic && payload == "OPEN") {
     if (door1_sanityCheck("open")) {
       Serial.print("Triggering ");
       Serial.print(door1_alias);
@@ -486,7 +543,7 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     }
   }
 
-  else if (requestedDoor == mqtt_door1_action_topic && requestedAction == "CLOSE") {
+  else if (topic == mqtt_door1_action_topic && payload == "CLOSE") {
     if (door1_sanityCheck("closed")) {
       Serial.print("Triggering ");
       Serial.print(door1_alias);
@@ -501,7 +558,7 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     }
   }
 
-  else if (requestedDoor == mqtt_door1_action_topic && requestedAction == "STATE") {
+  else if (topic == mqtt_door1_action_topic && payload == "STATE") {
     Serial.print("Publishing on-demand status update for ");
     Serial.print(door1_alias);
     Serial.println("!");
@@ -509,7 +566,7 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     publish_door1_status();
   }
 
-  else if (requestedDoor == mqtt_door2_action_topic && requestedAction == "OPEN") {
+  else if (topic == mqtt_door2_action_topic && payload == "OPEN") {
     if (door2_sanityCheck("open")) {
       Serial.print("Triggering ");
       Serial.print(door2_alias);
@@ -524,7 +581,7 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     }  
   }
 
-  else if (requestedDoor == mqtt_door2_action_topic && requestedAction == "CLOSE") {
+  else if (topic == mqtt_door2_action_topic && payload == "CLOSE") {
     if (door2_sanityCheck("closed")) {
       Serial.print("Triggering ");
       Serial.print(door2_alias);
@@ -539,7 +596,7 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     }
   }
 
-  else if (requestedDoor == mqtt_door2_action_topic && requestedAction == "STATE") {
+  else if (topic == mqtt_door2_action_topic && payload == "STATE") {
     Serial.print("Publishing on-demand status update for ");
     Serial.print(door2_alias);
     Serial.println("!");
@@ -547,7 +604,7 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     publish_door2_status();
   }  
 
-  else if (requestedDoor == mqtt_aux_door1_action_topic && requestedAction == "STATE") {
+  else if (topic == mqtt_aux_door1_action_topic && payload == "STATE") {
     Serial.print("Publishing on-demand status update for ");
     Serial.print(aux_door1_alias);
     Serial.println("!");
@@ -555,7 +612,7 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     publish_aux_door1_status();
   }
 
-  else if (requestedDoor == mqtt_aux_door2_action_topic && requestedAction == "STATE") {
+  else if (topic == mqtt_aux_door2_action_topic && payload == "STATE") {
     Serial.print("Publishing on-demand status update for ");
     Serial.print(aux_door2_alias);
     Serial.println("!");
@@ -563,13 +620,12 @@ void triggerDoorAction(String requestedDoor, String requestedAction) {
     publish_aux_door2_status();
   }
 
-  else if (requestedDoor == mqtt_dht_action_topic && requestedAction == "STATE") {
-    Serial.print("Publishing on-demand DHT Temperature and Humidity update!");
-    dht_read_publish();
+  else if (topic == apiTopic) {
+    processAPIMessage(payload);
   }
 
   else { 
-    Serial.println("Unrecognized action payload... taking no action!");
+    Serial.println("Action message arrived with unknown payload... taking no action!");
   }
 }
 
@@ -620,7 +676,7 @@ void dht_read_publish() {
 }
 
 void publish_ha_mqtt_discovery() {
-  Serial.print("Publishing Home Assistant MQTT Discovery payloads...");
+  Serial.println("Publishing Home Assistant MQTT Discovery payloads...");
   publish_ha_mqtt_discovery_door1();
   if (door2_enabled) {
     publish_ha_mqtt_discovery_door2();
@@ -670,7 +726,7 @@ void publish_ha_mqtt_discovery_door1() {
   // Publish payload
   Serial.print("Publishing MQTT Discovery payload for ");
   Serial.print(door1_alias);
-  Serial.print(" ...");
+  Serial.println("...");
   client.publish(topic, payload, false);
 
 }
@@ -708,17 +764,18 @@ void publish_ha_mqtt_discovery_door2() {
   // Publish payload
   Serial.print("Publishing MQTT Discovery payload for ");
   Serial.print(door2_alias);
-  Serial.print(" ...");
+  Serial.println("...");
   client.publish(topic, payload, false);
 
 }
 
 void publish_ha_mqtt_discovery_auxdoor1() {
-  const size_t bufferSize = JSON_OBJECT_SIZE(8);
+  const size_t bufferSize = JSON_OBJECT_SIZE(9);
   DynamicJsonBuffer jsonBuffer(bufferSize);
 
   JsonObject& root = jsonBuffer.createObject();
   root["name"] = aux_door1_alias;
+  root["state_topic"] = mqtt_aux_door1_status_topic;
   root["payload_on"] = "open";
   root["payload_off"] = "closed";
   root["availability_topic"] = availabilityTopic;
@@ -741,17 +798,18 @@ void publish_ha_mqtt_discovery_auxdoor1() {
   // Publish payload
   Serial.print("Publishing MQTT Discovery payload for ");
   Serial.print(aux_door1_alias);
-  Serial.print(" ...");
+  Serial.println("...");
   client.publish(topic, payload, false);
 
 }
 
 void publish_ha_mqtt_discovery_auxdoor2() {
-  const size_t bufferSize = JSON_OBJECT_SIZE(8);
+  const size_t bufferSize = JSON_OBJECT_SIZE(9);
   DynamicJsonBuffer jsonBuffer(bufferSize);
 
   JsonObject& root = jsonBuffer.createObject();
   root["name"] = aux_door2_alias;
+  root["state_topic"] = mqtt_aux_door2_status_topic;
   root["payload_on"] = "open";
   root["payload_off"] = "closed";
   root["availability_topic"] = availabilityTopic;
@@ -774,7 +832,7 @@ void publish_ha_mqtt_discovery_auxdoor2() {
   // Publish payload
   Serial.print("Publishing MQTT Discovery payload for ");
   Serial.print(aux_door2_alias);
-  Serial.print(" ...");
+  Serial.println("...");
   client.publish(topic, payload, false);
 
 }
@@ -784,11 +842,12 @@ void publish_ha_mqtt_discovery_temperature() {
   DynamicJsonBuffer jsonBuffer(bufferSize);
 
   boolean celsius = DHT_TEMPERATURE_CELSIUS;
+  String uom = "";
   if (celsius) {
-    String uom = "°C";
+    uom = "°C";
   }
   else {
-    String uom = "°F";
+    uom = "°F";
   }
 
   String alias = DHT_TEMPERATURE_ALIAS;
@@ -816,7 +875,7 @@ void publish_ha_mqtt_discovery_temperature() {
   // Publish payload
   Serial.print("Publishing MQTT Discovery payload for ");
   Serial.print(alias);
-  Serial.print(" ...");
+  Serial.println("...");
   client.publish(topic, payload, false);
 
 }
@@ -850,9 +909,58 @@ void publish_ha_mqtt_discovery_humidity() {
   // Publish payload
   Serial.print("Publishing MQTT Discovery payload for ");
   Serial.print(alias);
-  Serial.print(" ...");
+  Serial.println("...");
   client.publish(topic, payload, false);
 
+}
+
+// Function that serial prints the status of devices, for use in setup().
+
+void print_device_status() {
+  Serial.print("GarHAge version: ");
+  Serial.println(garhageVersion);
+
+  Serial.print("Relay Mode     : ");
+  if (activeHighRelay) {
+    Serial.println("Active-High");
+  }
+  else {
+    Serial.println("Active-Low");
+  }
+
+  Serial.println("Door 1         : Enabled");
+
+  Serial.print("Door 2         : ");
+  if (door2_enabled) {
+    Serial.println("Enabled");
+  }
+  else {
+    Serial.println("Disabled");
+  }
+
+  Serial.print("Aux Door 1     : ");
+  if (aux_door1_enabled) {
+    Serial.println("Enabled");
+  }
+  else {
+    Serial.println("Disabled");
+  }
+
+  Serial.print("Aux Door 2     : ");
+  if (aux_door2_enabled) {
+    Serial.println("Enabled");
+  }
+  else {
+    Serial.println("Disabled");
+  }
+
+  Serial.print("DHT Sensor     : ");
+  if (dht_enabled) {
+    Serial.println("Enabled");
+  }
+  else {
+    Serial.println("Disabled");
+  }
 }
 
 // Function that runs in loop() to connect/reconnect to the MQTT broker, and publish the current door statuses on connect
@@ -865,7 +973,13 @@ void reconnect() {
     if (client.connect(mqtt_clientId, mqtt_username, mqtt_password, availabilityTopic, 0, true, lwtMessage)) {
       Serial.println("Connected!");
 
-      // Publish disovery payloads before other messages so that entities are created first
+      // Subscribe to API topic
+      Serial.print("Subscribing to ");
+      Serial.print(apiTopic);
+      Serial.println("...");
+      client.subscribe(apiTopic);
+
+      // Publish discovery payloads before other messages so that entities are created first
       if (discoveryEnabled) {
       publish_ha_mqtt_discovery();
       }
@@ -913,11 +1027,6 @@ void reconnect() {
 
       // Publish the current temperature and humidity readings 
       if (dht_enabled) {
-        Serial.print("Subscribing to ");
-        Serial.print(mqtt_dht_action_topic);
-        Serial.println("...");
-        client.subscribe(mqtt_dht_action_topic);
-        
         dht_read_publish();
         dht_lastReadTime = millis();
       }
@@ -926,7 +1035,7 @@ void reconnect() {
     else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
+      Serial.println("; try again in 5 seconds...");
       // Wait 5 seconds before retrying
       delay(5000);
     }
@@ -987,29 +1096,18 @@ void setup() {
     aux_door2_lastStatusValue = digitalRead(aux_door2_statusPin);
   }
   
-
   // Setup serial output, connect to wifi, connect to MQTT broker, set MQTT message callback
   Serial.begin(115200);
 
-  Serial.println("Starting GarHAge...");
+  Serial.println();
+  Serial.print("Starting GarHAge...");
+  Serial.println();
 
-  if (activeHighRelay) {
-    Serial.println("Relay mode: Active-High");
-  }
-  else {
-    Serial.println("Relay mode: Active-Low");
-  }
-
-  if (dht_enabled) {
-    dht.begin();
-    Serial.println("DHT sensor: Enabled");
-  }
-  else {
-    Serial.println("DHT sensor: Disabled");
-  }
+  print_device_status();
   
   setup_wifi();
   setup_ota();
+  if (dht_enabled) { dht.begin(); }
   client.setServer(mqtt_broker, 1883);
   client.setCallback(callback);
 }
